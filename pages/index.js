@@ -34,19 +34,33 @@ export default function Home() {
 
   
   const openBookReader = (book) => {
-    if (!book.book_file) {
+    if (!book || !book.book_file) {
+      console.error('Книга или файл книги не найдены:', book);
       return;
     }
-    // Открываем страницу чтения
-    window.open(`/reader?filename=${encodeURIComponent(book.book_file)}`, '_blank');
+    try {
+      // Открываем страницу чтения
+      window.open(`/reader?filename=${encodeURIComponent(book.book_file)}`, '_blank');
+    } catch (error) {
+      console.error('Ошибка открытия читалки:', error);
+    }
   };
 
   const deleteBook = async (id) => {
+    if (!id) {
+      console.error('ID книги не указан');
+      return;
+    }
     if (!confirm('Вы уверены, что хотите удалить эту книгу?')) return;
     
     setLoading(true);
     try {
-      const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/books?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Ошибка удаления книги' }));
+        console.error('Ошибка удаления книги:', errorData.error);
+        return;
+      }
       const data = await res.json();
       if (data.message) {
         loadBooks();
