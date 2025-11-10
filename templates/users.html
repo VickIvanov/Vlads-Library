@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление пользователями - Космическая библиотека</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 20px;
+            position: relative;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .home-btn {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            left: clamp(10px, 2vw, 20px);
+            padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 24px);
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(12px, 1.5vw, 16px);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .home-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            background: #555;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .checkbox-cell {
+            text-align: center;
+            width: 80px;
+        }
+        
+        .subscription-cell {
+            text-align: center;
+            width: 100px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .subscription-icon {
+            font-size: 24px;
+            display: inline-block;
+        }
+        
+        .subscription-icon.active {
+            color: #28a745;
+        }
+        
+        .subscription-icon.inactive {
+            color: #ccc;
+        }
+        
+        .source-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .source-env {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .source-file {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .toast {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            right: clamp(10px, 2vw, 20px);
+            background: #28a745;
+            color: white;
+            padding: clamp(12px, 1.8vw, 18px) clamp(20px, 3vw, 28px);
+            border-radius: clamp(4px, 0.6vw, 6px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            max-width: clamp(250px, 40vw, 400px);
+            font-size: clamp(12px, 1.5vw, 16px);
+        }
+        
+        .toast.error {
+            background: #dc3545;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/admin" class="home-btn">🏠 Админ панель</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Управление пользователями</h1>
+            <div>
+                <span id="adminName" style="margin-right: 15px;"></span>
+                <button class="logout-btn" onclick="logout()">Выход</button>
+            </div>
+        </div>
+        
+        <div id="loginForm" style="display: none; text-align: center; padding: 40px;">
+            <h2>Требуется авторизация администратора</h2>
+            <p style="margin: 20px 0;">
+                <a href="/admin" style="color: #007bff; text-decoration: none;">Войти в админ панель</a>
+            </p>
+        </div>
+        
+        <div id="usersPanel" style="display: none;">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell">Админ</th>
+                        <th>Имя пользователя</th>
+                        <th>Источник</th>
+                        <th class="subscription-cell">Подписка</th>
+                        <th>Дата создания</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px;">Загрузка...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Проверка авторизации
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/check-auth');
+                const data = await res.json();
+                if (data.is_admin) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('usersPanel').style.display = 'block';
+                    document.getElementById('adminName').textContent = 'Админ: ' + (data.username || 'admin');
+                    loadUsers();
+                    return true;
+                } else {
+                    document.getElementById('loginForm').style.display = 'block';
+                    document.getElementById('usersPanel').style.display = 'none';
+                    return false;
+                }
+            } catch (error) {
+                console.error('Ошибка проверки авторизации:', error);
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('usersPanel').style.display = 'none';
+                return false;
+            }
+        }
+        
+        // Загрузка пользователей
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        showToast('Требуется авторизация администратора', 'error');
+                        checkAuth();
+                        return;
+                    }
+                    throw new Error('Ошибка загрузки пользователей');
+                }
+                
+                const users = await res.json();
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Пользователи не найдены</td></tr>';
+                    return;
+                }
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const username = user.username;
+                    const encodedUsername = encodeURIComponent(username);
+                    
+                    row.innerHTML = `
+                        <td class="checkbox-cell">
+                            <input 
+                                type="checkbox" 
+                                ${user.is_admin ? 'checked' : ''} 
+                                ${user.source === 'env' ? 'disabled title="Пользователи из .env нельзя редактировать"' : ''}
+                                onchange="updateUserAdmin('${encodedUsername}', this.checked)"
+                            >
+                        </td>
+                        <td>${escapeHtml(username)}</td>
+                        <td>
+                            <span class="source-badge source-${user.source}">${user.source === 'env' ? '.env' : 'Файл'}</span>
+                        </td>
+                        <td class="subscription-cell">
+                            <span class="subscription-icon ${user.has_subscription ? 'active' : 'inactive'}" title="${user.has_subscription ? 'Есть подписка' : 'Нет подписки'}">
+                                ${user.has_subscription ? '⭐' : '☆'}
+                            </span>
+                            ${user.source === 'file' ? `
+                                <input 
+                                    type="checkbox" 
+                                    ${user.has_subscription ? 'checked' : ''}
+                                    onchange="updateUserSubscription('${encodedUsername}', this.checked)"
+                                    style="margin-left: 10px;"
+                                >
+                            ` : ''}
+                        </td>
+                        <td>${user.created_at ? new Date(parseFloat(user.created_at) * 1000).toLocaleDateString('ru-RU') : '-'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                showToast('Ошибка загрузки пользователей', 'error');
+            }
+        }
+        
+        // Обновление прав администратора
+        async function updateUserAdmin(username, isAdmin) {
+            try {
+                const decodedUsername = decodeURIComponent(username);
+                // Получаем текущие данные пользователя
+                const usersRes = await fetch('/api/users');
+                const users = await usersRes.json();
+                const currentUser = users.find(u => u.username === decodedUsername);
+                
+                const res = await fetch(`/api/users/${encodeURIComponent(decodedUsername)}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        is_admin: isAdmin,
+                        has_subscription: currentUser ? currentUser.has_subscription : false
+                    })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Ошибка обновления');
+                }
+                
+                const data = await res.json();
+                showToast(data.message || 'Права обновлены');
+                
+                // Обновляем сессию, если это текущий пользователь
+                const authRes = await fetch('/api/check-auth');
+                const auth = await authRes.json();
+                if (auth.username === decodedUsername && isAdmin) {
+                    // Перезагружаем страницу, чтобы обновить сессию
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    loadUsers(); // Обновляем список
+                }
+            } catch (error) {
+                console.error('Ошибка обновления прав:', error);
+                showToast('Ошибка обновления прав: ' + error.message, 'error');
+                loadUsers(); // Перезагружаем список
+            }
+        }
+        
+        // Обновление подписки
+        async function updateUserSubscription(username, hasSubscription) {
+            try {
+                const decodedUsername = decodeURIComponent(username);
+                // Получаем текущие данные пользователя
+                const usersRes = await fetch('/api/users');
+                const users = await usersRes.json();
+                const currentUser = users.find(u => u.username === decodedUsername);
+                
+                const res = await fetch(`/api/users/${encodeURIComponent(decodedUsername)}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        is_admin: currentUser ? currentUser.is_admin : false,
+                        has_subscription: hasSubscription
+                    })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Ошибка обновления');
+                }
+                
+                const data = await res.json();
+                showToast(data.message || 'Подписка обновлена');
+                loadUsers(); // Обновляем отображение
+            } catch (error) {
+                console.error('Ошибка обновления подписки:', error);
+                showToast('Ошибка обновления подписки: ' + error.message, 'error');
+                loadUsers(); // Перезагружаем список
+            }
+        }
+        
+        // Выход
+        async function logout() {
+            try {
+                await fetch('/api/logout', {method: 'POST'});
+                checkAuth();
+            } catch (error) {
+                console.error('Ошибка выхода:', error);
+            }
+        }
+        
+        // Показать уведомление
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Экранирование HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Инициализация
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление пользователями - Космическая библиотека</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 20px;
+            position: relative;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .home-btn {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            left: clamp(10px, 2vw, 20px);
+            padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 24px);
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(12px, 1.5vw, 16px);
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .home-btn:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover {
+            background: #555;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .checkbox-cell {
+            text-align: center;
+            width: 80px;
+        }
+        
+        .subscription-cell {
+            text-align: center;
+            width: 100px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .subscription-icon {
+            font-size: 24px;
+            display: inline-block;
+        }
+        
+        .subscription-icon.active {
+            color: #28a745;
+        }
+        
+        .subscription-icon.inactive {
+            color: #ccc;
+        }
+        
+        .source-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .source-env {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .source-file {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .toast {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            right: clamp(10px, 2vw, 20px);
+            background: #28a745;
+            color: white;
+            padding: clamp(12px, 1.8vw, 18px) clamp(20px, 3vw, 28px);
+            border-radius: clamp(4px, 0.6vw, 6px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            max-width: clamp(250px, 40vw, 400px);
+            font-size: clamp(12px, 1.5vw, 16px);
+        }
+        
+        .toast.error {
+            background: #dc3545;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/admin" class="home-btn">🏠 Админ панель</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Управление пользователями</h1>
+            <div>
+                <span id="adminName" style="margin-right: 15px;"></span>
+                <button class="logout-btn" onclick="logout()">Выход</button>
+            </div>
+        </div>
+        
+        <div id="loginForm" style="display: none; text-align: center; padding: 40px;">
+            <h2>Требуется авторизация администратора</h2>
+            <p style="margin: 20px 0;">
+                <a href="/admin" style="color: #007bff; text-decoration: none;">Войти в админ панель</a>
+            </p>
+        </div>
+        
+        <div id="usersPanel" style="display: none;">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell">Админ</th>
+                        <th>Имя пользователя</th>
+                        <th>Источник</th>
+                        <th class="subscription-cell">Подписка</th>
+                        <th>Дата создания</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px;">Загрузка...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // Проверка авторизации
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/check-auth');
+                const data = await res.json();
+                if (data.is_admin) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('usersPanel').style.display = 'block';
+                    document.getElementById('adminName').textContent = 'Админ: ' + (data.username || 'admin');
+                    loadUsers();
+                    return true;
+                } else {
+                    document.getElementById('loginForm').style.display = 'block';
+                    document.getElementById('usersPanel').style.display = 'none';
+                    return false;
+                }
+            } catch (error) {
+                console.error('Ошибка проверки авторизации:', error);
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('usersPanel').style.display = 'none';
+                return false;
+            }
+        }
+        
+        // Загрузка пользователей
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        showToast('Требуется авторизация администратора', 'error');
+                        checkAuth();
+                        return;
+                    }
+                    throw new Error('Ошибка загрузки пользователей');
+                }
+                
+                const users = await res.json();
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Пользователи не найдены</td></tr>';
+                    return;
+                }
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const username = user.username;
+                    const encodedUsername = encodeURIComponent(username);
+                    
+                    row.innerHTML = `
+                        <td class="checkbox-cell">
+                            <input 
+                                type="checkbox" 
+                                ${user.is_admin ? 'checked' : ''} 
+                                ${user.source === 'env' ? 'disabled title="Пользователи из .env нельзя редактировать"' : ''}
+                                onchange="updateUserAdmin('${encodedUsername}', this.checked)"
+                            >
+                        </td>
+                        <td>${escapeHtml(username)}</td>
+                        <td>
+                            <span class="source-badge source-${user.source}">${user.source === 'env' ? '.env' : 'Файл'}</span>
+                        </td>
+                        <td class="subscription-cell">
+                            <span class="subscription-icon ${user.has_subscription ? 'active' : 'inactive'}" title="${user.has_subscription ? 'Есть подписка' : 'Нет подписки'}">
+                                ${user.has_subscription ? '⭐' : '☆'}
+                            </span>
+                            ${user.source === 'file' ? `
+                                <input 
+                                    type="checkbox" 
+                                    ${user.has_subscription ? 'checked' : ''}
+                                    onchange="updateUserSubscription('${encodedUsername}', this.checked)"
+                                    style="margin-left: 10px;"
+                                >
+                            ` : ''}
+                        </td>
+                        <td>${user.created_at ? new Date(parseFloat(user.created_at) * 1000).toLocaleDateString('ru-RU') : '-'}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+                showToast('Ошибка загрузки пользователей', 'error');
+            }
+        }
+        
+        // Обновление прав администратора
+        async function updateUserAdmin(username, isAdmin) {
+            try {
+                const decodedUsername = decodeURIComponent(username);
+                // Получаем текущие данные пользователя
+                const usersRes = await fetch('/api/users');
+                const users = await usersRes.json();
+                const currentUser = users.find(u => u.username === decodedUsername);
+                
+                const res = await fetch(`/api/users/${encodeURIComponent(decodedUsername)}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        is_admin: isAdmin,
+                        has_subscription: currentUser ? currentUser.has_subscription : false
+                    })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Ошибка обновления');
+                }
+                
+                const data = await res.json();
+                showToast(data.message || 'Права обновлены');
+                
+                // Обновляем сессию, если это текущий пользователь
+                const authRes = await fetch('/api/check-auth');
+                const auth = await authRes.json();
+                if (auth.username === decodedUsername && isAdmin) {
+                    // Перезагружаем страницу, чтобы обновить сессию
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    loadUsers(); // Обновляем список
+                }
+            } catch (error) {
+                console.error('Ошибка обновления прав:', error);
+                showToast('Ошибка обновления прав: ' + error.message, 'error');
+                loadUsers(); // Перезагружаем список
+            }
+        }
+        
+        // Обновление подписки
+        async function updateUserSubscription(username, hasSubscription) {
+            try {
+                const decodedUsername = decodeURIComponent(username);
+                // Получаем текущие данные пользователя
+                const usersRes = await fetch('/api/users');
+                const users = await usersRes.json();
+                const currentUser = users.find(u => u.username === decodedUsername);
+                
+                const res = await fetch(`/api/users/${encodeURIComponent(decodedUsername)}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        is_admin: currentUser ? currentUser.is_admin : false,
+                        has_subscription: hasSubscription
+                    })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Ошибка обновления');
+                }
+                
+                const data = await res.json();
+                showToast(data.message || 'Подписка обновлена');
+                loadUsers(); // Обновляем отображение
+            } catch (error) {
+                console.error('Ошибка обновления подписки:', error);
+                showToast('Ошибка обновления подписки: ' + error.message, 'error');
+                loadUsers(); // Перезагружаем список
+            }
+        }
+        
+        // Выход
+        async function logout() {
+            try {
+                await fetch('/api/logout', {method: 'POST'});
+                checkAuth();
+            } catch (error) {
+                console.error('Ошибка выхода:', error);
+            }
+        }
+        
+        // Показать уведомление
+        function showToast(message, type = 'success') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Экранирование HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Инициализация
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
+

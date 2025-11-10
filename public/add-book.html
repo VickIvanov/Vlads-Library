@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавить книгу</title>
+</head>
+<body>
+  <h1>Добавление книги</h1>
+  <form id="bookForm">
+    <input type="text" name="title" placeholder="Название" required />
+    <input type="text" name="author" placeholder="Автор" required />
+    <input type="text" name="genre" placeholder="Жанр" required />
+    <input type="text" name="description" placeholder="Описание" />
+    <input type="text" name="cover" placeholder="Ссылка на обложку" />
+    <input type="text" name="added_by" placeholder="Добавил" />
+    <button type="submit">Добавить</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    const form = document.getElementById('bookForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData);
+
+      const res = await fetch('/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const text = await res.text();
+      message.textContent = text;
+      form.reset();
+    });
+  </script>
+</body>
+</html>

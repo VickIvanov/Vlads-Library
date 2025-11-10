@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чтение книги</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .reader-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(20px, 3vh, 40px) 0;
+        }
+        
+        .book-view {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 clamp(20px, 5vw, 60px);
+        }
+        
+        .book-view::-webkit-scrollbar {
+            height: 12px;
+        }
+        
+        .book-view::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        
+        .book-view::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+        
+        .book-view::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.7);
+        }
+        
+        .page {
+            min-width: 100vw;
+            width: 100vw;
+            flex-shrink: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: start;
+            padding: clamp(20px, 3vh, 40px) clamp(10px, 2vw, 20px);
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .page-content {
+            background: linear-gradient(to bottom, #fffef7 0%, #fff 100%);
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            max-height: 95vh;
+            padding: clamp(40px, 6vw, 80px);
+            box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.1),
+                0 10px 40px rgba(0,0,0,0.3),
+                0 0 80px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow-y: auto;
+            font-size: clamp(18px, 2.2vw, 22px);
+            line-height: 1.9;
+            color: #2c3e50;
+            text-align: justify;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .page-content:hover {
+            transform: scale(1.01);
+            box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.1),
+                0 15px 50px rgba(0,0,0,0.4),
+                0 0 100px rgba(0,0,0,0.15);
+        }
+        
+        .page-content::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, 
+                transparent 0%,
+                rgba(200,200,200,0.3) 10%,
+                rgba(200,200,200,0.5) 50%,
+                rgba(200,200,200,0.3) 90%,
+                transparent 100%
+            );
+        }
+        
+        .page-content::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .page-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 5px;
+        }
+        
+        .page-content::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .page-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: clamp(15px, 2vh, 25px);
+            text-align: center;
+            width: 100%;
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(14px, 1.8vw, 18px);
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: inline-block;
+            max-width: fit-content;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .nav-button {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.95);
+            color: #667eea;
+            border: 3px solid rgba(255,255,255,0.5);
+            width: clamp(50px, 7vw, 70px);
+            height: clamp(50px, 7vw, 70px);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: bold;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-button:hover:not(:disabled) {
+            background: white;
+            transform: translateY(-50%) scale(1.15);
+            box-shadow: 0 6px 30px rgba(0,0,0,0.4);
+            color: #764ba2;
+        }
+        
+        .nav-button:active:not(:disabled) {
+            transform: translateY(-50%) scale(1.05);
+        }
+        
+        .nav-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: rgba(255,255,255,0.6);
+        }
+        
+        .nav-button.prev {
+            left: clamp(15px, 3vw, 30px);
+        }
+        
+        .nav-button.next {
+            right: clamp(15px, 3vw, 30px);
+        }
+        
+        .close-button {
+            position: fixed;
+            top: clamp(15px, 2.5vh, 25px);
+            right: clamp(15px, 3vw, 30px);
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            padding: clamp(10px, 1.5vw, 14px) clamp(18px, 3vw, 26px);
+            border-radius: clamp(20px, 3vw, 30px);
+            cursor: pointer;
+            font-size: clamp(13px, 1.8vw, 17px);
+            z-index: 1001;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            backdrop-filter: blur(10px);
+            font-weight: 500;
+        }
+        
+        .close-button:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+        }
+        
+        .book-title {
+            text-align: center;
+            font-size: clamp(32px, 4vw, 48px);
+            margin-bottom: clamp(25px, 4vh, 50px);
+            color: #2c3e50;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            line-height: 1.3;
+            padding-bottom: clamp(20px, 3vh, 30px);
+            border-bottom: 3px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .book-author {
+            text-align: center;
+            font-size: clamp(20px, 3vw, 28px);
+            margin-bottom: clamp(40px, 6vh, 80px);
+            color: #667eea;
+            font-style: italic;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .page-content p {
+            margin-bottom: 1.5em;
+            text-indent: 2em;
+        }
+        
+        .page-content p:first-child {
+            text-indent: 0;
+        }
+        
+        .page-content p:first-child::first-letter {
+            font-size: 3em;
+            line-height: 0.8;
+            float: left;
+            padding-right: 8px;
+            padding-top: 4px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .page {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.9);
+            z-index: 1002;
+            transition: width 0.3s ease;
+            box-shadow: 0 2px 10px rgba(255,255,255,0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .page-content {
+                width: 95%;
+                padding: clamp(25px, 4vw, 35px);
+                font-size: 18px;
+                max-height: 90vh;
+            }
+            
+            .nav-button {
+                width: 50px;
+                height: 50px;
+                font-size: 28px;
+            }
+            
+            .book-title {
+                font-size: 28px;
+            }
+            
+            .book-author {
+                font-size: 20px;
+            }
+        }
+        
+        @media (min-width: 1400px) {
+            .page-content {
+                max-width: 1000px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    <button class="close-button" onclick="window.close()">✕ Закрыть</button>
+    <button class="nav-button prev" id="prevBtn" onclick="prevPage()">‹</button>
+    <button class="nav-button next" id="nextBtn" onclick="nextPage()">›</button>
+    
+    <div class="reader-container">
+        <div class="book-view" id="bookView"></div>
+    </div>
+    
+    <script>
+        let pages = [];
+        let currentPageIndex = 0;
+        const wordsPerPage = 300; // Примерное количество слов на страницу
+        
+        // Загружаем текст книги
+        async function loadBook() {
+            try {
+                const bookId = new URLSearchParams(window.location.search).get('id');
+                if (!bookId) {
+                    document.getElementById('bookView').innerHTML = '<div class="page"><div class="page-content">Ошибка: ID книги не указан</div></div>';
+                    return;
+                }
+                
+                console.log('Загрузка книги с ID:', bookId);
+                const url = `/api/books/${encodeURIComponent(bookId)}/text`;
+                console.log('URL запроса:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = { error: errorText || 'Неизвестная ошибка' };
+                    }
+                    console.error('Ошибка ответа:', response.status, errorData);
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Данные получены:', data);
+                
+                if (!data.text) {
+                    throw new Error('Текст книги не найден в ответе сервера');
+                }
+                
+                const text = data.text;
+                const bookTitle = data.title || 'Книга';
+                const bookAuthor = data.author || '';
+                
+                // Разбиваем текст на страницы
+                pages = splitIntoPages(text, bookTitle, bookAuthor);
+                renderPages();
+                
+                // Навигация клавиатурой
+                document.addEventListener('keydown', handleKeyPress);
+                
+                // Сохраняем позицию при скролле
+                const bookView = document.getElementById('bookView');
+                bookView.addEventListener('scroll', savePosition);
+                
+                // Обработка прокрутки колесом мыши для горизонтальной прокрутки
+                bookView.addEventListener('wheel', (e) => {
+                    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                        e.preventDefault();
+                        bookView.scrollLeft += e.deltaY;
+                    }
+                }, { passive: false });
+                
+                // Восстанавливаем позицию
+                restorePosition();
+            } catch (error) {
+                console.error('Ошибка загрузки книги:', error);
+                const errorMessage = error.message || 'Неизвестная ошибка';
+                document.getElementById('bookView').innerHTML = `
+                    <div class="page">
+                        <div class="page-content" style="text-align: center; padding-top: 50px;">
+                            <h2 style="color: #dc3545; margin-bottom: 20px;">Ошибка загрузки книги</h2>
+                            <p style="color: #666; margin-bottom: 30px;">${errorMessage}</p>
+                            <button onclick="window.close()" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Разбиваем текст на страницы
+        function splitIntoPages(text, title, author) {
+            const pages = [];
+            
+            // Титульная страница
+            pages.push({
+                content: `<div class="book-title">${title}</div><div class="book-author">${author}</div>`,
+                isTitle: true
+            });
+            
+            // Разбиваем текст на абзацы и слова
+            const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+            
+            let currentPageContent = '';
+            let currentWordCount = 0;
+            
+            paragraphs.forEach(paragraph => {
+                const words = paragraph.trim().split(/\s+/).filter(word => word.length > 0);
+                const paragraphText = words.join(' ');
+                
+                // Если абзац помещается на текущую страницу
+                if (currentWordCount + words.length <= wordsPerPage) {
+                    currentPageContent += (currentPageContent ? '<p>' : '') + paragraphText + '</p>';
+                    currentWordCount += words.length;
+                } else {
+                    // Сохраняем текущую страницу
+                    if (currentPageContent) {
+                        pages.push({
+                            content: currentPageContent,
+                            isTitle: false
+                        });
+                    }
+                    
+                    // Начинаем новую страницу
+                    currentPageContent = '<p>' + paragraphText + '</p>';
+                    currentWordCount = words.length;
+                    
+                    // Если абзац слишком длинный, разбиваем его
+                    if (currentWordCount > wordsPerPage) {
+                        for (let i = 0; i < words.length; i += wordsPerPage) {
+                            const pageWords = words.slice(i, i + wordsPerPage);
+                            const pageText = pageWords.join(' ');
+                            pages.push({
+                                content: '<p>' + pageText + '</p>',
+                                isTitle: false
+                            });
+                        }
+                        currentPageContent = '';
+                        currentWordCount = 0;
+                    }
+                }
+            });
+            
+            // Добавляем последнюю страницу
+            if (currentPageContent) {
+                pages.push({
+                    content: currentPageContent,
+                    isTitle: false
+                });
+            }
+            
+            return pages;
+        }
+        
+        // Отображаем страницы
+        function renderPages() {
+            const bookView = document.getElementById('bookView');
+            bookView.innerHTML = '';
+            
+            pages.forEach((page, index) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page';
+                pageDiv.id = `page-${index}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'page-content';
+                contentDiv.innerHTML = page.content;
+                
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = `${index + 1} / ${pages.length}`;
+                
+                pageDiv.appendChild(contentDiv);
+                pageDiv.appendChild(pageNumber);
+                bookView.appendChild(pageDiv);
+            });
+            
+            updateNavigation();
+        }
+        
+        // Переход на предыдущую страницу
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                scrollToPage(currentPageIndex);
+            }
+        }
+        
+        // Переход на следующую страницу
+        function nextPage() {
+            if (currentPageIndex < pages.length - 1) {
+                currentPageIndex++;
+                scrollToPage(currentPageIndex);
+            }
+        }
+        
+        // Прокрутка к странице
+        function scrollToPage(index) {
+            const pageElement = document.getElementById(`page-${index}`);
+            if (pageElement) {
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                currentPageIndex = index;
+                updateNavigation();
+                savePosition();
+            }
+        }
+        
+        // Обновление кнопок навигации
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPageIndex === pages.length - 1;
+            updateProgress();
+        }
+        
+        // Обновление прогресс-бара
+        function updateProgress() {
+            const progress = ((currentPageIndex + 1) / pages.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+        
+        // Обработка нажатий клавиш
+        function handleKeyPress(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                prevPage();
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                nextPage();
+            } else if (e.key === 'Escape') {
+                window.close();
+            }
+        }
+        
+        // Сохранение позиции
+        function savePosition() {
+            const bookView = document.getElementById('bookView');
+            const scrollLeft = bookView.scrollLeft;
+            const pageWidth = window.innerWidth;
+            const pageIndex = Math.round(scrollLeft / pageWidth);
+            
+            if (pageIndex !== currentPageIndex) {
+                currentPageIndex = pageIndex;
+                updateNavigation();
+            }
+            
+            localStorage.setItem('bookPosition', JSON.stringify({
+                pageIndex: currentPageIndex,
+                scrollLeft: scrollLeft
+            }));
+        }
+        
+        // Восстановление позиции
+        function restorePosition() {
+            const saved = localStorage.getItem('bookPosition');
+            if (saved) {
+                try {
+                    const position = JSON.parse(saved);
+                    if (position.pageIndex < pages.length) {
+                        currentPageIndex = position.pageIndex;
+                        setTimeout(() => {
+                            scrollToPage(currentPageIndex);
+                        }, 100);
+                    }
+                } catch (e) {
+                    console.error('Ошибка восстановления позиции:', e);
+                }
+            }
+        }
+        
+        // Обработка свайпов (для мобильных устройств)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.getElementById('bookView').addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.getElementById('bookView').addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    nextPage(); // Свайп влево - следующая страница
+                } else {
+                    prevPage(); // Свайп вправо - предыдущая страница
+                }
+            }
+        }
+        
+        // Инициализация
+        window.onload = function() {
+            loadBook();
+        };
+    </script>
+</body>
+</html>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чтение книги</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .reader-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(20px, 3vh, 40px) 0;
+        }
+        
+        .book-view {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 clamp(20px, 5vw, 60px);
+        }
+        
+        .book-view::-webkit-scrollbar {
+            height: 12px;
+        }
+        
+        .book-view::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+        
+        .book-view::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+        
+        .book-view::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.7);
+        }
+        
+        .page {
+            min-width: 100vw;
+            width: 100vw;
+            flex-shrink: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: start;
+            padding: clamp(20px, 3vh, 40px) clamp(10px, 2vw, 20px);
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .page-content {
+            background: linear-gradient(to bottom, #fffef7 0%, #fff 100%);
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            max-height: 95vh;
+            padding: clamp(40px, 6vw, 80px);
+            box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.1),
+                0 10px 40px rgba(0,0,0,0.3),
+                0 0 80px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow-y: auto;
+            font-size: clamp(18px, 2.2vw, 22px);
+            line-height: 1.9;
+            color: #2c3e50;
+            text-align: justify;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .page-content:hover {
+            transform: scale(1.01);
+            box-shadow: 
+                0 0 0 1px rgba(0,0,0,0.1),
+                0 15px 50px rgba(0,0,0,0.4),
+                0 0 100px rgba(0,0,0,0.15);
+        }
+        
+        .page-content::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, 
+                transparent 0%,
+                rgba(200,200,200,0.3) 10%,
+                rgba(200,200,200,0.5) 50%,
+                rgba(200,200,200,0.3) 90%,
+                transparent 100%
+            );
+        }
+        
+        .page-content::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .page-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 5px;
+        }
+        
+        .page-content::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .page-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: clamp(15px, 2vh, 25px);
+            text-align: center;
+            width: 100%;
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(14px, 1.8vw, 18px);
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            display: inline-block;
+            max-width: fit-content;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .nav-button {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.95);
+            color: #667eea;
+            border: 3px solid rgba(255,255,255,0.5);
+            width: clamp(50px, 7vw, 70px);
+            height: clamp(50px, 7vw, 70px);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: clamp(24px, 4vw, 36px);
+            font-weight: bold;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-button:hover:not(:disabled) {
+            background: white;
+            transform: translateY(-50%) scale(1.15);
+            box-shadow: 0 6px 30px rgba(0,0,0,0.4);
+            color: #764ba2;
+        }
+        
+        .nav-button:active:not(:disabled) {
+            transform: translateY(-50%) scale(1.05);
+        }
+        
+        .nav-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: rgba(255,255,255,0.6);
+        }
+        
+        .nav-button.prev {
+            left: clamp(15px, 3vw, 30px);
+        }
+        
+        .nav-button.next {
+            right: clamp(15px, 3vw, 30px);
+        }
+        
+        .close-button {
+            position: fixed;
+            top: clamp(15px, 2.5vh, 25px);
+            right: clamp(15px, 3vw, 30px);
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            padding: clamp(10px, 1.5vw, 14px) clamp(18px, 3vw, 26px);
+            border-radius: clamp(20px, 3vw, 30px);
+            cursor: pointer;
+            font-size: clamp(13px, 1.8vw, 17px);
+            z-index: 1001;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            backdrop-filter: blur(10px);
+            font-weight: 500;
+        }
+        
+        .close-button:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+        }
+        
+        .book-title {
+            text-align: center;
+            font-size: clamp(32px, 4vw, 48px);
+            margin-bottom: clamp(25px, 4vh, 50px);
+            color: #2c3e50;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            line-height: 1.3;
+            padding-bottom: clamp(20px, 3vh, 30px);
+            border-bottom: 3px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .book-author {
+            text-align: center;
+            font-size: clamp(20px, 3vw, 28px);
+            margin-bottom: clamp(40px, 6vh, 80px);
+            color: #667eea;
+            font-style: italic;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .page-content p {
+            margin-bottom: 1.5em;
+            text-indent: 2em;
+        }
+        
+        .page-content p:first-child {
+            text-indent: 0;
+        }
+        
+        .page-content p:first-child::first-letter {
+            font-size: 3em;
+            line-height: 0.8;
+            float: left;
+            padding-right: 8px;
+            padding-top: 4px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .page {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.9);
+            z-index: 1002;
+            transition: width 0.3s ease;
+            box-shadow: 0 2px 10px rgba(255,255,255,0.5);
+        }
+        
+        @media (max-width: 768px) {
+            .page-content {
+                width: 95%;
+                padding: clamp(25px, 4vw, 35px);
+                font-size: 18px;
+                max-height: 90vh;
+            }
+            
+            .nav-button {
+                width: 50px;
+                height: 50px;
+                font-size: 28px;
+            }
+            
+            .book-title {
+                font-size: 28px;
+            }
+            
+            .book-author {
+                font-size: 20px;
+            }
+        }
+        
+        @media (min-width: 1400px) {
+            .page-content {
+                max-width: 1000px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    <button class="close-button" onclick="window.close()">✕ Закрыть</button>
+    <button class="nav-button prev" id="prevBtn" onclick="prevPage()">‹</button>
+    <button class="nav-button next" id="nextBtn" onclick="nextPage()">›</button>
+    
+    <div class="reader-container">
+        <div class="book-view" id="bookView"></div>
+    </div>
+    
+    <script>
+        let pages = [];
+        let currentPageIndex = 0;
+        const wordsPerPage = 300; // Примерное количество слов на страницу
+        
+        // Загружаем текст книги
+        async function loadBook() {
+            try {
+                const bookId = new URLSearchParams(window.location.search).get('id');
+                if (!bookId) {
+                    document.getElementById('bookView').innerHTML = '<div class="page"><div class="page-content">Ошибка: ID книги не указан</div></div>';
+                    return;
+                }
+                
+                console.log('Загрузка книги с ID:', bookId);
+                const url = `/api/books/${encodeURIComponent(bookId)}/text`;
+                console.log('URL запроса:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        errorData = { error: errorText || 'Неизвестная ошибка' };
+                    }
+                    console.error('Ошибка ответа:', response.status, errorData);
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Данные получены:', data);
+                
+                if (!data.text) {
+                    throw new Error('Текст книги не найден в ответе сервера');
+                }
+                
+                const text = data.text;
+                const bookTitle = data.title || 'Книга';
+                const bookAuthor = data.author || '';
+                
+                // Разбиваем текст на страницы
+                pages = splitIntoPages(text, bookTitle, bookAuthor);
+                renderPages();
+                
+                // Навигация клавиатурой
+                document.addEventListener('keydown', handleKeyPress);
+                
+                // Сохраняем позицию при скролле
+                const bookView = document.getElementById('bookView');
+                bookView.addEventListener('scroll', savePosition);
+                
+                // Обработка прокрутки колесом мыши для горизонтальной прокрутки
+                bookView.addEventListener('wheel', (e) => {
+                    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                        e.preventDefault();
+                        bookView.scrollLeft += e.deltaY;
+                    }
+                }, { passive: false });
+                
+                // Восстанавливаем позицию
+                restorePosition();
+            } catch (error) {
+                console.error('Ошибка загрузки книги:', error);
+                const errorMessage = error.message || 'Неизвестная ошибка';
+                document.getElementById('bookView').innerHTML = `
+                    <div class="page">
+                        <div class="page-content" style="text-align: center; padding-top: 50px;">
+                            <h2 style="color: #dc3545; margin-bottom: 20px;">Ошибка загрузки книги</h2>
+                            <p style="color: #666; margin-bottom: 30px;">${errorMessage}</p>
+                            <button onclick="window.close()" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Разбиваем текст на страницы
+        function splitIntoPages(text, title, author) {
+            const pages = [];
+            
+            // Титульная страница
+            pages.push({
+                content: `<div class="book-title">${title}</div><div class="book-author">${author}</div>`,
+                isTitle: true
+            });
+            
+            // Разбиваем текст на абзацы и слова
+            const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+            
+            let currentPageContent = '';
+            let currentWordCount = 0;
+            
+            paragraphs.forEach(paragraph => {
+                const words = paragraph.trim().split(/\s+/).filter(word => word.length > 0);
+                const paragraphText = words.join(' ');
+                
+                // Если абзац помещается на текущую страницу
+                if (currentWordCount + words.length <= wordsPerPage) {
+                    currentPageContent += (currentPageContent ? '<p>' : '') + paragraphText + '</p>';
+                    currentWordCount += words.length;
+                } else {
+                    // Сохраняем текущую страницу
+                    if (currentPageContent) {
+                        pages.push({
+                            content: currentPageContent,
+                            isTitle: false
+                        });
+                    }
+                    
+                    // Начинаем новую страницу
+                    currentPageContent = '<p>' + paragraphText + '</p>';
+                    currentWordCount = words.length;
+                    
+                    // Если абзац слишком длинный, разбиваем его
+                    if (currentWordCount > wordsPerPage) {
+                        for (let i = 0; i < words.length; i += wordsPerPage) {
+                            const pageWords = words.slice(i, i + wordsPerPage);
+                            const pageText = pageWords.join(' ');
+                            pages.push({
+                                content: '<p>' + pageText + '</p>',
+                                isTitle: false
+                            });
+                        }
+                        currentPageContent = '';
+                        currentWordCount = 0;
+                    }
+                }
+            });
+            
+            // Добавляем последнюю страницу
+            if (currentPageContent) {
+                pages.push({
+                    content: currentPageContent,
+                    isTitle: false
+                });
+            }
+            
+            return pages;
+        }
+        
+        // Отображаем страницы
+        function renderPages() {
+            const bookView = document.getElementById('bookView');
+            bookView.innerHTML = '';
+            
+            pages.forEach((page, index) => {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page';
+                pageDiv.id = `page-${index}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'page-content';
+                contentDiv.innerHTML = page.content;
+                
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = `${index + 1} / ${pages.length}`;
+                
+                pageDiv.appendChild(contentDiv);
+                pageDiv.appendChild(pageNumber);
+                bookView.appendChild(pageDiv);
+            });
+            
+            updateNavigation();
+        }
+        
+        // Переход на предыдущую страницу
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                scrollToPage(currentPageIndex);
+            }
+        }
+        
+        // Переход на следующую страницу
+        function nextPage() {
+            if (currentPageIndex < pages.length - 1) {
+                currentPageIndex++;
+                scrollToPage(currentPageIndex);
+            }
+        }
+        
+        // Прокрутка к странице
+        function scrollToPage(index) {
+            const pageElement = document.getElementById(`page-${index}`);
+            if (pageElement) {
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                currentPageIndex = index;
+                updateNavigation();
+                savePosition();
+            }
+        }
+        
+        // Обновление кнопок навигации
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPageIndex === pages.length - 1;
+            updateProgress();
+        }
+        
+        // Обновление прогресс-бара
+        function updateProgress() {
+            const progress = ((currentPageIndex + 1) / pages.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+        
+        // Обработка нажатий клавиш
+        function handleKeyPress(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                prevPage();
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                nextPage();
+            } else if (e.key === 'Escape') {
+                window.close();
+            }
+        }
+        
+        // Сохранение позиции
+        function savePosition() {
+            const bookView = document.getElementById('bookView');
+            const scrollLeft = bookView.scrollLeft;
+            const pageWidth = window.innerWidth;
+            const pageIndex = Math.round(scrollLeft / pageWidth);
+            
+            if (pageIndex !== currentPageIndex) {
+                currentPageIndex = pageIndex;
+                updateNavigation();
+            }
+            
+            localStorage.setItem('bookPosition', JSON.stringify({
+                pageIndex: currentPageIndex,
+                scrollLeft: scrollLeft
+            }));
+        }
+        
+        // Восстановление позиции
+        function restorePosition() {
+            const saved = localStorage.getItem('bookPosition');
+            if (saved) {
+                try {
+                    const position = JSON.parse(saved);
+                    if (position.pageIndex < pages.length) {
+                        currentPageIndex = position.pageIndex;
+                        setTimeout(() => {
+                            scrollToPage(currentPageIndex);
+                        }, 100);
+                    }
+                } catch (e) {
+                    console.error('Ошибка восстановления позиции:', e);
+                }
+            }
+        }
+        
+        // Обработка свайпов (для мобильных устройств)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.getElementById('bookView').addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.getElementById('bookView').addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    nextPage(); // Свайп влево - следующая страница
+                } else {
+                    prevPage(); // Свайп вправо - предыдущая страница
+                }
+            }
+        }
+        
+        // Инициализация
+        window.onload = function() {
+            loadBook();
+        };
+    </script>
+</body>
+</html>
+

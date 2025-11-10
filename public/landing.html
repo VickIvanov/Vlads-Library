@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cosmic Library - Регистрация</title>
+</head>
+<body>
+  <h1>Регистрация</h1>
+  <form id="registerForm">
+    <input type="text" name="username" placeholder="Логин" required />
+    <input type="password" name="password" placeholder="Пароль" required />
+    <button type="submit">Зарегистрироваться</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData);
+
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const text = await res.text();
+      message.textContent = text;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космическая библиотека - Каталог книг</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 20px;
+            position: relative;
+            color: #333;
+        }
+        
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: clamp(12px, 2vw, 18px) clamp(40px, 6vw, 55px) clamp(12px, 2vw, 18px) clamp(18px, 2.5vw, 22px);
+            border: 2px solid #ddd;
+            border-radius: clamp(20px, 3vw, 30px);
+            font-size: clamp(14px, 1.8vw, 18px);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .search-input {
+                padding: 12px 40px 12px 18px;
+                font-size: 16px; /* Больше для мобильных */
+            }
+        }
+        
+        .search-input:focus {
+            border-color: #007bff;
+        }
+        
+        .search-history {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none;
+            margin-top: 5px;
+        }
+        
+        .search-history-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .search-history-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .search-history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .filters-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: clamp(8px, 1.2vw, 12px) clamp(12px, 2vw, 18px);
+            border: 2px solid #ddd;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            font-size: clamp(12px, 1.5vw, 16px);
+            outline: none;
+            cursor: pointer;
+            background: white;
+            min-width: clamp(120px, 18vw, 180px);
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            border-color: #007bff;
+            transform: scale(1.02);
+        }
+        
+        .clear-filters {
+            padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 24px);
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(12px, 1.5vw, 16px);
+            transition: all 0.3s ease;
+            min-height: clamp(36px, 5vw, 44px);
+        }
+        
+        .clear-filters:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .filter-select, .clear-filters {
+                width: 100%;
+                min-width: 100%;
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #666;
+        }
+        
+        .admin-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .admin-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .books-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 25vw, 300px), 1fr));
+            gap: clamp(15px, 2vw, 25px);
+            margin-top: clamp(15px, 2vh, 25px);
+        }
+        
+        @media (max-width: 768px) {
+            .books-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        .book-card {
+            border: 1px solid #ddd;
+            padding: clamp(15px, 2vw, 25px);
+            border-radius: clamp(8px, 1.2vw, 12px);
+            background: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            color: #333;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .book-card h3 {
+            margin-bottom: clamp(8px, 1.2vw, 12px);
+            color: #333;
+            font-size: clamp(16px, 2vw, 20px);
+        }
+        
+        .book-card .author {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .book-card .genre {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: #555;
+            margin-top: 10px;
+        }
+        
+        .book-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .book-card .description {
+            color: #888;
+            font-size: 13px;
+            margin-top: 10px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .no-books {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .stats {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        /* Кнопка меню */
+        .menu-toggle {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            right: clamp(10px, 2vw, 20px);
+            padding: clamp(10px, 1.5vw, 14px) clamp(16px, 2.5vw, 24px);
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(18px, 2.5vw, 24px);
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            min-width: clamp(50px, 8vw, 60px);
+            min-height: clamp(50px, 8vw, 60px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(0, 86, 179, 0.95);
+            transform: scale(1.1);
+        }
+        
+        /* Боковое меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: clamp(300px, 40vw, 350px);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: clamp(20px, 3vw, 30px);
+        }
+        
+        .sidebar.active {
+            right: 0;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(20px, 3vh, 30px);
+            padding-bottom: clamp(15px, 2vh, 20px);
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .sidebar-header h2 {
+            color: #333;
+            margin: 0;
+            font-size: clamp(20px, 3vw, 24px);
+        }
+        
+        .close-sidebar {
+            background: none;
+            border: none;
+            font-size: clamp(24px, 4vw, 32px);
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: clamp(30px, 5vw, 40px);
+            height: clamp(30px, 5vw, 40px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-sidebar:hover {
+            color: #333;
+            transform: rotate(90deg);
+        }
+        
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.5vh, 15px);
+        }
+        
+        .sidebar-menu .btn {
+            width: 100%;
+            text-align: left;
+            padding: clamp(12px, 2vh, 16px) clamp(16px, 2.5vw, 20px);
+            font-size: clamp(14px, 2vw, 16px);
+            justify-content: flex-start;
+            display: flex;
+            align-items: center;
+            gap: clamp(10px, 1.5vw, 15px);
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu .btn:hover {
+            background: #0056b3;
+            transform: scale(1.02);
+        }
+        
+        .sidebar-menu .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .sidebar-menu .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 85vw;
+                right: -85vw;
+            }
+            
+            .menu-toggle {
+                padding: 12px;
+                min-width: 50px;
+                min-height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body id="body">
+    <!-- Кнопка открытия меню -->
+    <button class="menu-toggle" onclick="toggleSidebar()" title="Меню">
+        ☰
+    </button>
+    
+    <!-- Затемнение фона -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <!-- Боковое меню -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Меню</h2>
+            <button class="close-sidebar" onclick="closeSidebar()" title="Закрыть">×</button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="btn btn-secondary" onclick="closeSidebar();">
+                🏠 Главная страница
+            </a>
+            <a href="/admin" class="btn btn-secondary" onclick="closeSidebar();">
+                👤 Вход для администратора
+            </a>
+        </div>
+    </div>
+    
+    <div class="header">
+        <h1>📚 Космическая библиотека</h1>
+        <div class="search-container">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="🔍 Поиск по названию, автору, жанру или описанию..."
+                onkeyup="handleSearchInput()"
+                onfocus="showSearchHistory()"
+                onblur="setTimeout(() => hideSearchHistory(), 200)"
+                autocomplete="off"
+            >
+            <span class="search-icon">🔍</span>
+            <div class="search-history" id="searchHistory"></div>
+        </div>
+        
+        <div class="filters-container">
+            <select id="filterAuthor" class="filter-select" onchange="applyFilters()">
+                <option value="">Все авторы</option>
+            </select>
+            <select id="filterGenre" class="filter-select" onchange="applyFilters()">
+                <option value="">Все жанры</option>
+                <optgroup label="Художественная литература">
+                    <option value="Фантастика">Фантастика</option>
+                    <option value="Фэнтези">Фэнтези</option>
+                    <option value="Детектив">Детектив</option>
+                    <option value="Триллер">Триллер</option>
+                    <option value="Ужасы">Ужасы</option>
+                    <option value="Роман">Роман</option>
+                    <option value="Любовный роман">Любовный роман</option>
+                    <option value="Приключения">Приключения</option>
+                    <option value="Боевик">Боевик</option>
+                    <option value="Мистика">Мистика</option>
+                    <option value="Постапокалиптика">Постапокалиптика</option>
+                    <option value="Драма">Драма</option>
+                    <option value="Комедия">Комедия</option>
+                    <option value="Исторический роман">Исторический роман</option>
+                </optgroup>
+                <optgroup label="Продолжения и серии">
+                    <option value="Сиквел">Сиквел</option>
+                    <option value="Приквел">Приквел</option>
+                    <option value="Спин-офф">Спин-офф</option>
+                    <option value="Продолжение серии">Продолжение серии</option>
+                    <option value="Книга серии">Книга серии</option>
+                    <option value="Вторая часть">Вторая часть</option>
+                    <option value="Третья часть">Третья часть</option>
+                    <option value="Финальная часть">Финальная часть</option>
+                </optgroup>
+                <optgroup label="Документальная литература">
+                    <option value="Биография">Биография</option>
+                    <option value="Мемуары">Мемуары</option>
+                    <option value="Поэзия">Поэзия</option>
+                    <option value="Философия">Философия</option>
+                    <option value="Психология">Психология</option>
+                    <option value="Саморазвитие">Саморазвитие</option>
+                    <option value="Бизнес">Бизнес</option>
+                    <option value="Наука">Наука</option>
+                    <option value="Техника">Техника</option>
+                    <option value="Медицина">Медицина</option>
+                    <option value="Образование">Образование</option>
+                    <option value="Справочник">Справочник</option>
+                    <option value="Энциклопедия">Энциклопедия</option>
+                    <option value="Кулинария">Кулинария</option>
+                    <option value="Путешествия">Путешествия</option>
+                    <option value="Спорт">Спорт</option>
+                    <option value="Хобби">Хобби</option>
+                </optgroup>
+                <optgroup label="Детская и подростковая литература">
+                    <option value="Детская литература">Детская литература</option>
+                    <option value="Подростковая литература">Подростковая литература</option>
+                    <option value="Мифология">Мифология</option>
+                    <option value="Фольклор">Фольклор</option>
+                    <option value="Сказки">Сказки</option>
+                    <option value="Басни">Басни</option>
+                </optgroup>
+                <optgroup label="Другое">
+                    <option value="Религия">Религия</option>
+                    <option value="Эзотерика">Эзотерика</option>
+                    <option value="Классическая литература">Классическая литература</option>
+                    <option value="Современная литература">Современная литература</option>
+                    <option value="Другое">Другое</option>
+                </optgroup>
+            </select>
+            <button class="clear-filters" onclick="clearFilters()">Очистить фильтры</button>
+        </div>
+        <div class="stats" id="stats">Загрузка...</div>
+    </div>
+    
+    <div class="books-container">
+        <div class="books-grid" id="booksGrid">
+            <div class="no-books">Загрузка книг...</div>
+        </div>
+    </div>
+    
+    <script>
+        let allBooks = [];
+        let currentBackground = null;
+        
+        // Загрузка настроек фона
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (data.settings && data.settings.background) {
+                    currentBackground = data.settings.background;
+                    document.body.style.backgroundImage = `url(${currentBackground})`;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки настроек:', error);
+            }
+        }
+        
+        // Загрузка книг
+        async function loadBooks(searchQuery = '') {
+            try {
+                const url = searchQuery 
+                    ? `/api/books?search=${encodeURIComponent(searchQuery)}`
+                    : '/api/books';
+                    
+                const res = await fetch(url);
+                const books = await res.json();
+                
+                if (!searchQuery) {
+                    allBooks = books;
+                }
+                
+                displayBooks(books);
+                updateStats(books.length, searchQuery);
+                return Promise.resolve();
+            } catch (error) {
+                console.error('Ошибка загрузки книг:', error);
+                document.getElementById('booksGrid').innerHTML = 
+                    '<div class="no-books">Ошибка загрузки книг</div>';
+                return Promise.reject(error);
+            }
+        }
+        
+        // Отображение книг
+        function displayBooks(books) {
+            const grid = document.getElementById('booksGrid');
+            
+            if (books.length === 0) {
+                grid.innerHTML = '<div class="no-books">Книги не найдены</div>';
+                return;
+            }
+            
+            grid.innerHTML = '';
+            
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                const bookId = String(book.id || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const hasFile = book.book_file ? true : false;
+                card.innerHTML = `
+                    ${book.cover && book.cover.trim() !== '' ? `
+                    <img src="${book.cover}" 
+                         alt="${book.title}" 
+                         onerror="this.onerror=null; this.style.display='none'; const placeholder=this.nextElementSibling; if(placeholder) placeholder.style.display='flex';" 
+                         onload="const placeholder=this.nextElementSibling; if(placeholder) placeholder.style.display='none'; this.style.display='block';"
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 5px; margin-bottom: 15px; display: block;"
+                         crossorigin="anonymous">
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 5px; margin-bottom: 15px; display: none; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>
+                    ` : '<div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 5px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
+                    <h3>${book.title || 'Без названия'}</h3>
+                    <div class="author"><b>Автор:</b> ${book.author || 'Неизвестен'}</div>
+                    ${book.genre ? `<span class="genre">${book.genre}</span>` : ''}
+                    ${book.description ? `<div class="description">${book.description}</div>` : ''}
+                    ${hasFile ? `<button class="read-btn" onclick="downloadBook('${bookId}')" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;">📖 Читать</button>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        // Обновление статистики
+        function updateStats(count, searchQuery) {
+            const statsEl = document.getElementById('stats');
+            if (searchQuery) {
+                statsEl.textContent = `Найдено книг: ${count}`;
+            } else {
+                statsEl.textContent = `Всего книг в библиотеке: ${count}`;
+            }
+        }
+        
+        // Поиск книг
+        let searchTimeout;
+        function searchBooks(query = null) {
+            clearTimeout(searchTimeout);
+            
+            const searchInput = document.getElementById('searchInput');
+            const searchQuery = query !== null ? query : searchInput.value.trim();
+            
+            if (searchQuery) {
+                saveSearchHistory(searchQuery);
+            }
+            
+            searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 300);
+        }
+        
+        // Функция для скачивания/чтения книги
+        async function downloadBook(bookId) {
+            try {
+                // Открываем страницу чтения в новом окне
+                window.open(`/read?id=${encodeURIComponent(bookId)}`, '_blank');
+            } catch (error) {
+                console.error('Ошибка открытия книги:', error);
+                alert('Ошибка открытия книги');
+            }
+        }
+        
+        // Применение фильтров
+        function applyFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const searchQuery = searchInput.value.trim().toLowerCase();
+            const filterAuthor = document.getElementById('filterAuthor').value;
+            const filterGenre = document.getElementById('filterGenre').value;
+            
+            let filtered = allBooks.filter(book => {
+                const matchesSearch = !searchQuery || 
+                    (book.title && book.title.toLowerCase().includes(searchQuery)) ||
+                    (book.author && book.author.toLowerCase().includes(searchQuery)) ||
+                    (book.genre && book.genre.toLowerCase().includes(searchQuery)) ||
+                    (book.description && book.description.toLowerCase().includes(searchQuery));
+                
+                const matchesAuthor = !filterAuthor || (book.author === filterAuthor);
+                const matchesGenre = !filterGenre || (book.genre === filterGenre);
+                
+                return matchesSearch && matchesAuthor && matchesGenre;
+            });
+            
+            displayBooks(filtered);
+            updateStats(filtered.length, searchQuery);
+        }
+        
+        // Очистка фильтров
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterAuthor').value = '';
+            document.getElementById('filterGenre').value = '';
+            applyFilters();
+        }
+        
+        // Обработка поискового ввода
+        function handleSearchInput() {
+            searchBooks();
+        }
+        
+        // Показать историю поиска
+        function showSearchHistory() {
+            const history = document.getElementById('searchHistory');
+            const saved = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            if (saved.length > 0) {
+                history.style.display = 'block';
+            }
+        }
+        
+        // Скрыть историю поиска
+        function hideSearchHistory() {
+            document.getElementById('searchHistory').style.display = 'none';
+        }
+        
+        // Сохранить поисковый запрос
+        function saveSearchHistory(query) {
+            if (!query) return;
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            history = history.filter(h => h !== query);
+            history.unshift(query);
+            history = history.slice(0, 10);
+            localStorage.setItem('searchHistory', JSON.stringify(history));
+            renderSearchHistory();
+        }
+        
+        // Отобразить историю поиска
+        function renderSearchHistory() {
+            const history = document.getElementById('searchHistory');
+            const saved = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            history.innerHTML = '';
+            
+            saved.forEach(query => {
+                const item = document.createElement('div');
+                item.className = 'search-history-item';
+                item.textContent = query;
+                item.onclick = () => {
+                    document.getElementById('searchInput').value = query;
+                    searchBooks(query);
+                    hideSearchHistory();
+                };
+                history.appendChild(item);
+            });
+        }
+        
+        // Обновление фильтров авторов и жанров
+        function updateFilters() {
+            const authors = [...new Set(allBooks.map(b => b.author).filter(Boolean))].sort();
+            const genres = [...new Set(allBooks.map(b => b.genre).filter(Boolean))].sort();
+            
+            const authorSelect = document.getElementById('filterAuthor');
+            const genreSelect = document.getElementById('filterGenre');
+            
+            // Сохраняем текущие значения
+            const currentAuthor = authorSelect.value;
+            const currentGenre = genreSelect.value;
+            
+            // Обновляем список авторов
+            authorSelect.innerHTML = '<option value="">Все авторы</option>';
+            authors.forEach(author => {
+                const option = document.createElement('option');
+                option.value = author;
+                option.textContent = author;
+                if (author === currentAuthor) option.selected = true;
+                authorSelect.appendChild(option);
+            });
+            
+            // Обновляем список жанров (только уникальные из книг, но сохраняем структуру)
+            const genreOptions = genreSelect.querySelectorAll('option[value]');
+            genreOptions.forEach(opt => {
+                if (opt.value && !genres.includes(opt.value)) {
+                    opt.style.display = 'none';
+                } else if (opt.value) {
+                    opt.style.display = 'block';
+                }
+            });
+        }
+        
+        // Управление боковым меню
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+        
+        // Закрытие меню при нажатии Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+        
+        // Инициализация
+        window.onload = function() {
+            loadSettings();
+            loadBooks().then(() => {
+                updateFilters();
+            });
+            renderSearchHistory();
+        };
+    </script>
+</body>
+</html>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Космическая библиотека - Каталог книг</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            padding: 20px;
+            position: relative;
+            color: #333;
+        }
+        
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: clamp(12px, 2vw, 18px) clamp(40px, 6vw, 55px) clamp(12px, 2vw, 18px) clamp(18px, 2.5vw, 22px);
+            border: 2px solid #ddd;
+            border-radius: clamp(20px, 3vw, 30px);
+            font-size: clamp(14px, 1.8vw, 18px);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .search-input {
+                padding: 12px 40px 12px 18px;
+                font-size: 16px; /* Больше для мобильных */
+            }
+        }
+        
+        .search-input:focus {
+            border-color: #007bff;
+        }
+        
+        .search-history {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: none;
+            margin-top: 5px;
+        }
+        
+        .search-history-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+        
+        .search-history-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .search-history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .filters-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: clamp(8px, 1.2vw, 12px) clamp(12px, 2vw, 18px);
+            border: 2px solid #ddd;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            font-size: clamp(12px, 1.5vw, 16px);
+            outline: none;
+            cursor: pointer;
+            background: white;
+            min-width: clamp(120px, 18vw, 180px);
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            border-color: #007bff;
+            transform: scale(1.02);
+        }
+        
+        .clear-filters {
+            padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 24px);
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(12px, 1.5vw, 16px);
+            transition: all 0.3s ease;
+            min-height: clamp(36px, 5vw, 44px);
+        }
+        
+        .clear-filters:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .filter-select, .clear-filters {
+                width: 100%;
+                min-width: 100%;
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #666;
+        }
+        
+        .admin-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .admin-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .books-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 25vw, 300px), 1fr));
+            gap: clamp(15px, 2vw, 25px);
+            margin-top: clamp(15px, 2vh, 25px);
+        }
+        
+        @media (max-width: 768px) {
+            .books-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        .book-card {
+            border: 1px solid #ddd;
+            padding: clamp(15px, 2vw, 25px);
+            border-radius: clamp(8px, 1.2vw, 12px);
+            background: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            color: #333;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .book-card h3 {
+            margin-bottom: clamp(8px, 1.2vw, 12px);
+            color: #333;
+            font-size: clamp(16px, 2vw, 20px);
+        }
+        
+        .book-card .author {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .book-card .genre {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            color: #555;
+            margin-top: 10px;
+        }
+        
+        .book-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .book-card .description {
+            color: #888;
+            font-size: 13px;
+            margin-top: 10px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .no-books {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .stats {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        /* Кнопка меню */
+        .menu-toggle {
+            position: fixed;
+            top: clamp(10px, 2vh, 20px);
+            right: clamp(10px, 2vw, 20px);
+            padding: clamp(10px, 1.5vw, 14px) clamp(16px, 2.5vw, 24px);
+            background: rgba(0, 123, 255, 0.9);
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            font-size: clamp(18px, 2.5vw, 24px);
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            min-width: clamp(50px, 8vw, 60px);
+            min-height: clamp(50px, 8vw, 60px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(0, 86, 179, 0.95);
+            transform: scale(1.1);
+        }
+        
+        /* Боковое меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: clamp(300px, 40vw, 350px);
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: clamp(20px, 3vw, 30px);
+        }
+        
+        .sidebar.active {
+            right: 0;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(20px, 3vh, 30px);
+            padding-bottom: clamp(15px, 2vh, 20px);
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .sidebar-header h2 {
+            color: #333;
+            margin: 0;
+            font-size: clamp(20px, 3vw, 24px);
+        }
+        
+        .close-sidebar {
+            background: none;
+            border: none;
+            font-size: clamp(24px, 4vw, 32px);
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: clamp(30px, 5vw, 40px);
+            height: clamp(30px, 5vw, 40px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .close-sidebar:hover {
+            color: #333;
+            transform: rotate(90deg);
+        }
+        
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.5vh, 15px);
+        }
+        
+        .sidebar-menu .btn {
+            width: 100%;
+            text-align: left;
+            padding: clamp(12px, 2vh, 16px) clamp(16px, 2.5vw, 20px);
+            font-size: clamp(14px, 2vw, 16px);
+            justify-content: flex-start;
+            display: flex;
+            align-items: center;
+            gap: clamp(10px, 1.5vw, 15px);
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: clamp(4px, 0.6vw, 6px);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu .btn:hover {
+            background: #0056b3;
+            transform: scale(1.02);
+        }
+        
+        .sidebar-menu .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .sidebar-menu .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 85vw;
+                right: -85vw;
+            }
+            
+            .menu-toggle {
+                padding: 12px;
+                min-width: 50px;
+                min-height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body id="body">
+    <!-- Кнопка открытия меню -->
+    <button class="menu-toggle" onclick="toggleSidebar()" title="Меню">
+        ☰
+    </button>
+    
+    <!-- Затемнение фона -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    
+    <!-- Боковое меню -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Меню</h2>
+            <button class="close-sidebar" onclick="closeSidebar()" title="Закрыть">×</button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="btn btn-secondary" onclick="closeSidebar();">
+                🏠 Главная страница
+            </a>
+            <a href="/admin" class="btn btn-secondary" onclick="closeSidebar();">
+                👤 Вход для администратора
+            </a>
+        </div>
+    </div>
+    
+    <div class="header">
+        <h1>📚 Космическая библиотека</h1>
+        <div class="search-container">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="🔍 Поиск по названию, автору, жанру или описанию..."
+                onkeyup="handleSearchInput()"
+                onfocus="showSearchHistory()"
+                onblur="setTimeout(() => hideSearchHistory(), 200)"
+                autocomplete="off"
+            >
+            <span class="search-icon">🔍</span>
+            <div class="search-history" id="searchHistory"></div>
+        </div>
+        
+        <div class="filters-container">
+            <select id="filterAuthor" class="filter-select" onchange="applyFilters()">
+                <option value="">Все авторы</option>
+            </select>
+            <select id="filterGenre" class="filter-select" onchange="applyFilters()">
+                <option value="">Все жанры</option>
+                <optgroup label="Художественная литература">
+                    <option value="Фантастика">Фантастика</option>
+                    <option value="Фэнтези">Фэнтези</option>
+                    <option value="Детектив">Детектив</option>
+                    <option value="Триллер">Триллер</option>
+                    <option value="Ужасы">Ужасы</option>
+                    <option value="Роман">Роман</option>
+                    <option value="Любовный роман">Любовный роман</option>
+                    <option value="Приключения">Приключения</option>
+                    <option value="Боевик">Боевик</option>
+                    <option value="Мистика">Мистика</option>
+                    <option value="Постапокалиптика">Постапокалиптика</option>
+                    <option value="Драма">Драма</option>
+                    <option value="Комедия">Комедия</option>
+                    <option value="Исторический роман">Исторический роман</option>
+                </optgroup>
+                <optgroup label="Продолжения и серии">
+                    <option value="Сиквел">Сиквел</option>
+                    <option value="Приквел">Приквел</option>
+                    <option value="Спин-офф">Спин-офф</option>
+                    <option value="Продолжение серии">Продолжение серии</option>
+                    <option value="Книга серии">Книга серии</option>
+                    <option value="Вторая часть">Вторая часть</option>
+                    <option value="Третья часть">Третья часть</option>
+                    <option value="Финальная часть">Финальная часть</option>
+                </optgroup>
+                <optgroup label="Документальная литература">
+                    <option value="Биография">Биография</option>
+                    <option value="Мемуары">Мемуары</option>
+                    <option value="Поэзия">Поэзия</option>
+                    <option value="Философия">Философия</option>
+                    <option value="Психология">Психология</option>
+                    <option value="Саморазвитие">Саморазвитие</option>
+                    <option value="Бизнес">Бизнес</option>
+                    <option value="Наука">Наука</option>
+                    <option value="Техника">Техника</option>
+                    <option value="Медицина">Медицина</option>
+                    <option value="Образование">Образование</option>
+                    <option value="Справочник">Справочник</option>
+                    <option value="Энциклопедия">Энциклопедия</option>
+                    <option value="Кулинария">Кулинария</option>
+                    <option value="Путешествия">Путешествия</option>
+                    <option value="Спорт">Спорт</option>
+                    <option value="Хобби">Хобби</option>
+                </optgroup>
+                <optgroup label="Детская и подростковая литература">
+                    <option value="Детская литература">Детская литература</option>
+                    <option value="Подростковая литература">Подростковая литература</option>
+                    <option value="Мифология">Мифология</option>
+                    <option value="Фольклор">Фольклор</option>
+                    <option value="Сказки">Сказки</option>
+                    <option value="Басни">Басни</option>
+                </optgroup>
+                <optgroup label="Другое">
+                    <option value="Религия">Религия</option>
+                    <option value="Эзотерика">Эзотерика</option>
+                    <option value="Классическая литература">Классическая литература</option>
+                    <option value="Современная литература">Современная литература</option>
+                    <option value="Другое">Другое</option>
+                </optgroup>
+            </select>
+            <button class="clear-filters" onclick="clearFilters()">Очистить фильтры</button>
+        </div>
+        <div class="stats" id="stats">Загрузка...</div>
+    </div>
+    
+    <div class="books-container">
+        <div class="books-grid" id="booksGrid">
+            <div class="no-books">Загрузка книг...</div>
+        </div>
+    </div>
+    
+    <script>
+        let allBooks = [];
+        let currentBackground = null;
+        
+        // Загрузка настроек фона
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (data.settings && data.settings.background) {
+                    currentBackground = data.settings.background;
+                    document.body.style.backgroundImage = `url(${currentBackground})`;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки настроек:', error);
+            }
+        }
+        
+        // Загрузка книг
+        async function loadBooks(searchQuery = '') {
+            try {
+                const url = searchQuery 
+                    ? `/api/books?search=${encodeURIComponent(searchQuery)}`
+                    : '/api/books';
+                    
+                const res = await fetch(url);
+                const books = await res.json();
+                
+                if (!searchQuery) {
+                    allBooks = books;
+                }
+                
+                displayBooks(books);
+                updateStats(books.length, searchQuery);
+                return Promise.resolve();
+            } catch (error) {
+                console.error('Ошибка загрузки книг:', error);
+                document.getElementById('booksGrid').innerHTML = 
+                    '<div class="no-books">Ошибка загрузки книг</div>';
+                return Promise.reject(error);
+            }
+        }
+        
+        // Отображение книг
+        function displayBooks(books) {
+            const grid = document.getElementById('booksGrid');
+            
+            if (books.length === 0) {
+                grid.innerHTML = '<div class="no-books">Книги не найдены</div>';
+                return;
+            }
+            
+            grid.innerHTML = '';
+            
+            books.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                const bookId = String(book.id || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const hasFile = book.book_file ? true : false;
+                card.innerHTML = `
+                    ${book.cover && book.cover.trim() !== '' ? `
+                    <img src="${book.cover}" 
+                         alt="${book.title}" 
+                         onerror="this.onerror=null; this.style.display='none'; const placeholder=this.nextElementSibling; if(placeholder) placeholder.style.display='flex';" 
+                         onload="const placeholder=this.nextElementSibling; if(placeholder) placeholder.style.display='none'; this.style.display='block';"
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 5px; margin-bottom: 15px; display: block;"
+                         crossorigin="anonymous">
+                    <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 5px; margin-bottom: 15px; display: none; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>
+                    ` : '<div style="width: 100%; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 5px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
+                    <h3>${book.title || 'Без названия'}</h3>
+                    <div class="author"><b>Автор:</b> ${book.author || 'Неизвестен'}</div>
+                    ${book.genre ? `<span class="genre">${book.genre}</span>` : ''}
+                    ${book.description ? `<div class="description">${book.description}</div>` : ''}
+                    ${hasFile ? `<button class="read-btn" onclick="downloadBook('${bookId}')" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px;">📖 Читать</button>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        // Обновление статистики
+        function updateStats(count, searchQuery) {
+            const statsEl = document.getElementById('stats');
+            if (searchQuery) {
+                statsEl.textContent = `Найдено книг: ${count}`;
+            } else {
+                statsEl.textContent = `Всего книг в библиотеке: ${count}`;
+            }
+        }
+        
+        // Поиск книг
+        let searchTimeout;
+        function searchBooks(query = null) {
+            clearTimeout(searchTimeout);
+            
+            const searchInput = document.getElementById('searchInput');
+            const searchQuery = query !== null ? query : searchInput.value.trim();
+            
+            if (searchQuery) {
+                saveSearchHistory(searchQuery);
+            }
+            
+            searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 300);
+        }
+        
+        // Функция для скачивания/чтения книги
+        async function downloadBook(bookId) {
+            try {
+                // Открываем страницу чтения в новом окне
+                window.open(`/read?id=${encodeURIComponent(bookId)}`, '_blank');
+            } catch (error) {
+                console.error('Ошибка открытия книги:', error);
+                alert('Ошибка открытия книги');
+            }
+        }
+        
+        // Применение фильтров
+        function applyFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const searchQuery = searchInput.value.trim().toLowerCase();
+            const filterAuthor = document.getElementById('filterAuthor').value;
+            const filterGenre = document.getElementById('filterGenre').value;
+            
+            let filtered = allBooks.filter(book => {
+                const matchesSearch = !searchQuery || 
+                    (book.title && book.title.toLowerCase().includes(searchQuery)) ||
+                    (book.author && book.author.toLowerCase().includes(searchQuery)) ||
+                    (book.genre && book.genre.toLowerCase().includes(searchQuery)) ||
+                    (book.description && book.description.toLowerCase().includes(searchQuery));
+                
+                const matchesAuthor = !filterAuthor || (book.author === filterAuthor);
+                const matchesGenre = !filterGenre || (book.genre === filterGenre);
+                
+                return matchesSearch && matchesAuthor && matchesGenre;
+            });
+            
+            displayBooks(filtered);
+            updateStats(filtered.length, searchQuery);
+        }
+        
+        // Очистка фильтров
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterAuthor').value = '';
+            document.getElementById('filterGenre').value = '';
+            applyFilters();
+        }
+        
+        // Обработка поискового ввода
+        function handleSearchInput() {
+            searchBooks();
+        }
+        
+        // Показать историю поиска
+        function showSearchHistory() {
+            const history = document.getElementById('searchHistory');
+            const saved = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            if (saved.length > 0) {
+                history.style.display = 'block';
+            }
+        }
+        
+        // Скрыть историю поиска
+        function hideSearchHistory() {
+            document.getElementById('searchHistory').style.display = 'none';
+        }
+        
+        // Сохранить поисковый запрос
+        function saveSearchHistory(query) {
+            if (!query) return;
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            history = history.filter(h => h !== query);
+            history.unshift(query);
+            history = history.slice(0, 10);
+            localStorage.setItem('searchHistory', JSON.stringify(history));
+            renderSearchHistory();
+        }
+        
+        // Отобразить историю поиска
+        function renderSearchHistory() {
+            const history = document.getElementById('searchHistory');
+            const saved = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            history.innerHTML = '';
+            
+            saved.forEach(query => {
+                const item = document.createElement('div');
+                item.className = 'search-history-item';
+                item.textContent = query;
+                item.onclick = () => {
+                    document.getElementById('searchInput').value = query;
+                    searchBooks(query);
+                    hideSearchHistory();
+                };
+                history.appendChild(item);
+            });
+        }
+        
+        // Обновление фильтров авторов и жанров
+        function updateFilters() {
+            const authors = [...new Set(allBooks.map(b => b.author).filter(Boolean))].sort();
+            const genres = [...new Set(allBooks.map(b => b.genre).filter(Boolean))].sort();
+            
+            const authorSelect = document.getElementById('filterAuthor');
+            const genreSelect = document.getElementById('filterGenre');
+            
+            // Сохраняем текущие значения
+            const currentAuthor = authorSelect.value;
+            const currentGenre = genreSelect.value;
+            
+            // Обновляем список авторов
+            authorSelect.innerHTML = '<option value="">Все авторы</option>';
+            authors.forEach(author => {
+                const option = document.createElement('option');
+                option.value = author;
+                option.textContent = author;
+                if (author === currentAuthor) option.selected = true;
+                authorSelect.appendChild(option);
+            });
+            
+            // Обновляем список жанров (только уникальные из книг, но сохраняем структуру)
+            const genreOptions = genreSelect.querySelectorAll('option[value]');
+            genreOptions.forEach(opt => {
+                if (opt.value && !genres.includes(opt.value)) {
+                    opt.style.display = 'none';
+                } else if (opt.value) {
+                    opt.style.display = 'block';
+                }
+            });
+        }
+        
+        // Управление боковым меню
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+        
+        // Закрытие меню при нажатии Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+        
+        // Инициализация
+        window.onload = function() {
+            loadSettings();
+            loadBooks().then(() => {
+                updateFilters();
+            });
+            renderSearchHistory();
+        };
+    </script>
+</body>
+</html>
+

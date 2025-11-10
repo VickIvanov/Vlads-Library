@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Космическая Библиотека</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    body { font-family: sans-serif; }
+    .hidden { display: none; }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 Космическая Библиотека</h1>
+    <div class="search-bar">
+      <input id="searchInput" placeholder="🔍 Поиск..." />
+    </div>
+    <nav>
+      <button onclick="toggleSidebar()">Меню</button>
+      <button id="openAddBookPage" onclick="toggleAdminForm()">➕ Добавить книгу</button>
+      <button onclick="toggleTheme()">Сменить тему</button>
+    </nav>
+  </header>
+
+  <div class="sidebar hidden" id="sidebar">
+    <h2>🔐 Вход / Регистрация</h2>
+    <input id="username" placeholder="Имя" />
+    <input id="password" type="password" placeholder="Пароль" />
+    <button onclick="register()">Регистрация</button>
+    <button onclick="login()">Вход</button>
+
+    <div id="adminForm" class="hidden">
+      <h2>📘 Добавить книгу</h2>
+      <input id="title" placeholder="Название" />
+      <input type="file" id="bookFile" accept=".pdf,.txt,.epub" />
+      <input id="author" placeholder="Автор" />
+      <input id="description" placeholder="Описание" />
+      <input id="cover" placeholder="Ссылка на обложку" />
+      <select id="genre">
+        <option value="">Выберите жанр</option>
+        <option value="Фантастика">Фантастика</option>
+        <option value="Роман">Роман</option>
+        <option value="Детектив">Детектив</option>
+      </select>
+      <button id="addBookButton" onclick="addBook()">Добавить</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <button id="refreshButton" onclick="loadBooks()">🔄 Обновить список</button>
+    <div class="covers" id="coverGrid"></div>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <p id="modalMessage"></p>
+      <div id="modalButtons">
+        <button onclick="closeModal()">ОК</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подключаем внешний скрипт -->
+  <script src="/script.js"></script>
+</body>
+</html>

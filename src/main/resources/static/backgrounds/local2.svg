@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a0033;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#330066;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4d0099;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#grad2)"/>
+  <polygon points="200,300 250,350 200,400 150,350" fill="#fff" opacity="0.1"/>
+  <polygon points="800,200 850,250 800,300 750,250" fill="#fff" opacity="0.08"/>
+  <polygon points="1500,700 1550,750 1500,800 1450,750" fill="#fff" opacity="0.12"/>
+  <polygon points="600,800 650,850 600,900 550,850" fill="#fff" opacity="0.1"/>
+  <text x="960" y="540" font-family="Arial" font-size="48" fill="#fff" opacity="0.25" text-anchor="middle">LOCAL HOST BACKGROUND</text>
+</svg>
+

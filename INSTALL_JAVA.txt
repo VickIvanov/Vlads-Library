@@ -1,0 +1,57 @@
+УСТАНОВКА И ЗАПУСК JAVA ПРИЛОЖЕНИЯ
+====================================
+
+1. УСТАНОВИТЕ JAVA:
+   - Скачайте Java JDK 17 или выше с oracle.com или adoptium.net
+   - Установите и проверьте: java -version
+
+2. УСТАНОВИТЕ MAVEN:
+   - Скачайте Maven с maven.apache.org
+   - Распакуйте в папку (например C:\Program Files\Apache\maven)
+   - Добавьте Maven в PATH переменную окружения
+   - Проверьте: mvn -version
+
+3. ЗАПУСК:
+   - Откройте командную строку в папке проекта
+   - Выполните: mvn clean install
+   - Затем: mvn spring-boot:run
+   - Откройте браузер: http://localhost:8080
+
+ИЛИ используйте run-java.bat (если Maven установлен)
+
+
+====================================
+
+1. УСТАНОВИТЕ JAVA:
+   - Скачайте Java JDK 17 или выше с oracle.com или adoptium.net
+   - Установите и проверьте: java -version
+
+2. УСТАНОВИТЕ MAVEN:
+   - Скачайте Maven с maven.apache.org
+   - Распакуйте в папку (например C:\Program Files\Apache\maven)
+   - Добавьте Maven в PATH переменную окружения
+   - Проверьте: mvn -version
+
+3. ЗАПУСК:
+   - Откройте командную строку в папке проекта
+   - Выполните: mvn clean install
+   - Затем: mvn spring-boot:run
+   - Откройте браузер: http://localhost:8080
+
+ИЛИ используйте run-java.bat (если Maven установлен)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

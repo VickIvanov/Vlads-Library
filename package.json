@@ -1,0 +1,22 @@
+{
+  "name": "cosmic-library",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "vercel-build": "next build"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "formidable": "^3.5.4",
+    "next": "^16.0.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "description": "Веб-приложение для управления личной библиотекой книг",
+  "main": "index.js",
+  "keywords": [],
+  "author": ""
+}
