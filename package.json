@@ -17,6 +17,14 @@
   },
   "description": "Веб-приложение для управления личной библиотекой книг",
   "main": "index.js",
-  "keywords": [],
-  "author": ""
+  "keywords": ["library", "books", "nextjs", "react"],
+  "author": "Влад",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VickIvanov/Vlads-Library.git"
+  },
+  "homepage": "https://github.com/VickIvanov/Vlads-Library#readme",
+  "bugs": {
+    "url": "https://github.com/VickIvanov/Vlads-Library/issues"
+  }
 }
