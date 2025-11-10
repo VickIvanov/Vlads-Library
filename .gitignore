@@ -40,8 +40,8 @@ yarn-error.log*
 Thumbs.db
 
 # Database files (if sensitive)
-database.json
-books.json
+# database.json - commented out to allow reading on Vercel
+# books.json - commented out to allow reading on Vercel
 
 # Python
 __pycache__/
