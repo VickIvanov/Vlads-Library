@@ -16,10 +16,16 @@ export default function Home() {
     try {
       setLoading(true);
       const res = await fetch('/api/books');
+      if (!res.ok) {
+        console.error('Ошибка загрузки книг:', res.status, res.statusText);
+        setBooks([]);
+        return;
+      }
       const data = await res.json();
-      setBooks(data);
+      setBooks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Ошибка загрузки книг:', error);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -441,7 +447,11 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
                   {book.book_file && (
                     <button 
-                      onClick={() => openBookReader(book)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openBookReader(book);
+                      }}
                       style={{
                         flex: 1,
                         padding: '12px 20px',
@@ -460,26 +470,32 @@ export default function Home() {
                       📖 Читать
                     </button>
                   )}
-                  <button 
-                    onClick={() => deleteBook(book.id)}
-                    disabled={loading}
-                    style={{
-                      flex: 1,
-                      padding: '12px 20px',
-                      backgroundColor: loading ? '#ccc' : '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
-                    onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#ef4444')}
-                  >
-                    🗑️ Удалить
-                  </button>
+                  {isUserAdmin && (
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteBook(book.id);
+                      }}
+                      disabled={loading}
+                      style={{
+                        flex: 1,
+                        padding: '12px 20px',
+                        backgroundColor: loading ? '#ccc' : '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => !loading && (e.target.style.backgroundColor = '#dc2626')}
+                      onMouseOut={(e) => !loading && (e.target.style.backgroundColor = '#ef4444')}
+                    >
+                      🗑️ Удалить
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
