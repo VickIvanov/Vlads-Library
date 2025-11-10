@@ -161,23 +161,39 @@ export default function Home() {
   };
 
   useEffect(() => { 
+    // Проверяем, что мы в браузере
+    if (typeof window === 'undefined') return;
+    
     loadBooks();
     
     // Очищаем URL от старых параметров (если есть)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('error') || urlParams.has('google_login') || urlParams.has('username')) {
-      window.history.replaceState({}, document.title, window.location.pathname);
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('error') || urlParams.has('google_login') || urlParams.has('username')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (error) {
+      console.error('Ошибка очистки URL:', error);
     }
     
     // Проверяем сохраненного пользователя
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(savedUser);
-      // Проверяем через API, является ли пользователь админом
-      fetch(`/api/check-admin?username=${encodeURIComponent(savedUser)}`)
-        .then(res => res.json())
-        .then(data => setIsUserAdmin(data.isAdmin))
-        .catch(error => console.error('Ошибка проверки админа:', error));
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        setCurrentUser(savedUser);
+        // Проверяем через API, является ли пользователь админом
+        fetch(`/api/check-admin?username=${encodeURIComponent(savedUser)}`)
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            }
+            return { isAdmin: false };
+          })
+          .then(data => setIsUserAdmin(data.isAdmin || false))
+          .catch(error => console.error('Ошибка проверки админа:', error));
+      }
+    } catch (error) {
+      console.error('Ошибка чтения localStorage:', error);
     }
     
   }, []);
