@@ -15,13 +15,17 @@ export default function Home() {
   const loadBooks = async () => {
     try {
       setLoading(true);
+      console.log('Loading books...');
       const res = await fetch('/api/books');
+      console.log('Response status:', res.status, res.ok);
       if (!res.ok) {
-        console.error('Ошибка загрузки книг:', res.status, res.statusText);
+        const errorText = await res.text();
+        console.error('Ошибка загрузки книг:', res.status, res.statusText, errorText);
         setBooks([]);
         return;
       }
       const data = await res.json();
+      console.log('Books data received:', Array.isArray(data) ? `${data.length} books` : 'not an array', data);
       setBooks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Ошибка загрузки книг:', error);

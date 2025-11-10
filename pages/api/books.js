@@ -3,8 +3,10 @@ import { getAllBooks, addBook, deleteBook } from '../../lib/db.js';
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
+      console.log('GET /api/books - Starting...');
       const books = await getAllBooks();
-      res.status(200).json(books);
+      console.log('GET /api/books - Books loaded:', Array.isArray(books) ? books.length : 'not an array');
+      res.status(200).json(Array.isArray(books) ? books : []);
     } else if (req.method === 'POST') {
       const { title, author, genre, description = '', cover = 'https://via.placeholder.com/150', added_by = 'неизвестно' } = req.body;
       if (!title || !author || !genre) {
