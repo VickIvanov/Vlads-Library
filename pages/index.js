@@ -86,6 +86,12 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm)
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Ошибка входа' }));
+        console.error('Ошибка входа:', errorData.error);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       if (data.message) {
         setCurrentUser(data.username);
@@ -129,6 +135,12 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(registerForm)
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Ошибка регистрации' }));
+        console.error('Ошибка регистрации:', errorData.error);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       if (data.message) {
         setShowRegister(false);
