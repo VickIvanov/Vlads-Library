@@ -15,17 +15,14 @@ export default function Home() {
   const loadBooks = async () => {
     try {
       setLoading(true);
-      console.log('Loading books...');
       const res = await fetch('/api/books');
-      console.log('Response status:', res.status, res.ok);
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Ошибка загрузки книг:', res.status, res.statusText, errorText);
+        console.error('Ошибка загрузки книг:', res.status, res.statusText);
         setBooks([]);
+        setLoading(false);
         return;
       }
       const data = await res.json();
-      console.log('Books data received:', Array.isArray(data) ? `${data.length} books` : 'not an array', data);
       setBooks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Ошибка загрузки книг:', error);
@@ -358,7 +355,7 @@ export default function Home() {
           }}>
             {books.map(book => (
               <div 
-                key={book.id} 
+                key={book.id || book.title} 
                 style={{
                   background: 'rgba(255,255,255,0.95)',
                   backdropFilter: 'blur(10px)',
@@ -377,6 +374,10 @@ export default function Home() {
                 onMouseOut={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
+                }}
+                onClick={(e) => {
+                  // Предотвращаем всплытие события на карточку
+                  e.stopPropagation();
                 }}
               >
                 <div style={{ 
@@ -451,10 +452,13 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
                   {book.book_file && (
                     <button 
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        openBookReader(book);
+                        if (book && book.book_file) {
+                          openBookReader(book);
+                        }
                       }}
                       style={{
                         flex: 1,
@@ -476,10 +480,13 @@ export default function Home() {
                   )}
                   {isUserAdmin && (
                     <button 
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        deleteBook(book.id);
+                        if (book && book.id) {
+                          deleteBook(book.id);
+                        }
                       }}
                       disabled={loading}
                       style={{
