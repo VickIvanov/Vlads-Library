@@ -1,5 +1,5 @@
-import { readDb, writeDb } from '../../../lib/db.js';
-import { userExists } from '../../../lib/users.js';
+import { readDb, writeDb } from '../../../../lib/db.js';
+import { userExists } from '../../../../lib/users.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
