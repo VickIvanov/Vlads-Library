@@ -2,6 +2,8 @@ import { writeFile, mkdir, unlink } from 'fs/promises';
 import { addBook } from '../../lib/db.js';
 import { IncomingForm } from 'formidable';
 import { getBooksDirPath, getBookFilePath } from '../../lib/paths.js';
+import { logToDb } from '../../lib/logger.js';
+import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 
 // Функция для нормализации имени файла
 function normalizeFilename(title) {
@@ -22,6 +24,9 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  // Инициализируем БД при первом запросе
+  await ensureDatabaseInitialized();
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -117,6 +122,7 @@ export default async function handler(req, res) {
         const result = await addBook(bookData);
         
         if (result.success) {
+          await logToDb('info', 'Book uploaded and added', { bookId: result.id, title, filename: normalizedFilename }, req);
           res.status(200).json({ 
             message: 'Книга и файл успешно добавлены', 
             id: result.id,
@@ -129,15 +135,18 @@ export default async function handler(req, res) {
           } catch (e) {
             console.error('Ошибка удаления файла:', e);
           }
+          await logToDb('warning', 'Failed to add uploaded book', { title, reason: result.message }, req);
           res.status(400).json({ error: result.message || 'Не удалось добавить книгу' });
         }
       } catch (error) {
         console.error('Ошибка обработки:', error);
+        await logToDb('error', 'Upload book processing error', { error: error.message, stack: error.stack }, req);
         res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
       }
     });
   } catch (error) {
     console.error('Ошибка загрузки файла:', error);
+    await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
     res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
