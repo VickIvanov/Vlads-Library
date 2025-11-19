@@ -248,7 +248,7 @@ export default async function handler(req, res) {
         }
         return res.status(500).json({ 
           error: 'База данных не настроена',
-          details: 'Создайте PostgreSQL базу данных в Vercel Storage (Storage → Create Database → Postgres)'
+          details: 'Создайте PostgreSQL базу данных:\n\n1. Откройте проект на Vercel (https://vercel.com/dashboard)\n2. Перейдите в раздел "Storage" (Хранилище)\n3. Нажмите "Create Database" (Создать базу данных)\n4. Выберите любой PostgreSQL провайдер (Neon, Prisma, Supabase)\n5. После создания перезапустите деплой'
         });
       }
 
