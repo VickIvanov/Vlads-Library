@@ -140,6 +140,16 @@ export default function AddBook() {
           method: 'POST',
           body: formData
         });
+        
+        // Проверяем статус ответа
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Неизвестная ошибка сервера' }));
+          console.error('Ошибка загрузки книги:', errorData);
+          alert(errorData.error || `Ошибка: ${res.status} ${res.statusText}`);
+          setLoading(false);
+          return;
+        }
+        
         data = await res.json();
       } else {
         // Если файла нет, используем обычный API
@@ -156,15 +166,28 @@ export default function AddBook() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bookData)
         });
+        
+        // Проверяем статус ответа
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Неизвестная ошибка сервера' }));
+          console.error('Ошибка добавления книги:', errorData);
+          alert(errorData.error || `Ошибка: ${res.status} ${res.statusText}`);
+          setLoading(false);
+          return;
+        }
+        
         data = await res.json();
       }
       
       if (data.message) {
         setForm({ title: '', author: '', genre: '', description: '', cover: '', file: null });
         router.push('/');
+      } else if (data.error) {
+        alert(data.error || 'Не удалось добавить книгу');
       }
     } catch (error) {
       console.error('Ошибка добавления книги:', error);
+      alert('Произошла ошибка при добавлении книги. Проверьте консоль для деталей.');
     } finally {
       setLoading(false);
     }

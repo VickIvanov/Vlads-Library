@@ -56,12 +56,19 @@ export default async function handler(req, res) {
       }
 
       try {
+        console.log('[UPLOAD-BOOK] Получены данные:', { 
+          fields: Object.keys(fields), 
+          files: files ? Object.keys(files) : 'нет файлов' 
+        });
+        
         const file = files.file;
         const title = Array.isArray(fields.title) ? fields.title[0] : fields.title || '';
         const author = Array.isArray(fields.author) ? fields.author[0] : fields.author || '';
         const genre = Array.isArray(fields.genre) ? fields.genre[0] : fields.genre || '';
         const description = Array.isArray(fields.description) ? fields.description[0] : fields.description || '';
         const cover = Array.isArray(fields.cover) ? fields.cover[0] : fields.cover || 'https://via.placeholder.com/300x400/4a5568/ffffff?text=No+Cover';
+
+        console.log('[UPLOAD-BOOK] Распарсенные данные:', { title, author, genre, hasFile: !!file });
 
         if (!file) {
           return res.status(400).json({ error: 'Файл не загружен' });
@@ -119,7 +126,9 @@ export default async function handler(req, res) {
           file_format: 'txt'
         };
 
+        console.log('[UPLOAD-BOOK] Пытаемся добавить книгу в БД:', { title, author, genre });
         const result = await addBook(bookData);
+        console.log('[UPLOAD-BOOK] Результат добавления:', { success: result.success, message: result.message, id: result.id });
         
         if (result.success) {
           // Безопасное логирование
