@@ -12,6 +12,7 @@
   },
   "license": "ISC",
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@vercel/postgres": "^0.5.1",
     "formidable": "^3.5.4",
     "next": "^16.0.1",
@@ -21,7 +22,12 @@
   },
   "description": "Веб-приложение для управления личной библиотекой книг",
   "main": "index.js",
-  "keywords": ["library", "books", "nextjs", "react"],
+  "keywords": [
+    "library",
+    "books",
+    "nextjs",
+    "react"
+  ],
   "author": "Влад",
   "repository": {
     "type": "git",
