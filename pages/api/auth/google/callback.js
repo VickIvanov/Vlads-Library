@@ -1,7 +1,12 @@
-import { readDb, writeDb } from '../../../../lib/db.js';
+import { getAllUsersFromDb, addUserToDb, userExistsInDb } from '../../../../lib/db.js';
 import { userExists } from '../../../../lib/users.js';
+import { logToDb } from '../../../../lib/logger.js';
+import { ensureDatabaseInitialized } from '../../../../lib/db-init.js';
 
 export default async function handler(req, res) {
+  // Инициализируем БД при первом запросе
+  await ensureDatabaseInitialized();
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -78,19 +83,19 @@ export default async function handler(req, res) {
     }
 
     // ВАЖНО: Проверяем, зарегистрирован ли пользователь
-    const db = await readDb();
-    const dbUsers = db.users || [];
+    const dbUsers = await getAllUsersFromDb();
     
     // Проверяем в .env
     const existsInEnv = userExists(email);
     
-    // Проверяем в БД
-    const existsInDb = dbUsers.some(u => 
+    // Проверяем в PostgreSQL БД
+    const existsInDb = await userExistsInDb(email) || dbUsers.some(u => 
       u.username === email || u.email === email
     );
 
     // Если пользователь не зарегистрирован, запрещаем вход
     if (!existsInEnv && !existsInDb) {
+      await logToDb('warning', 'Google OAuth login attempt - user not registered', { email }, req);
       return res.redirect('/?error=user_not_registered');
     }
 
@@ -99,28 +104,17 @@ export default async function handler(req, res) {
     for (const user of dbUsers) {
       if (user.username === email || user.email === email) {
         userFound = true;
-        // Обновляем информацию
-        user.email = email;
-        user.name = name;
-        user.auth_method = 'google';
+        // Пользователь уже есть в БД, просто логируем вход
         break;
       }
     }
 
     // Если не найден в БД, но есть в .env, создаем запись в БД
     if (!userFound && existsInEnv) {
-      dbUsers.push({
-        username: email,
-        email: email,
-        name: name,
-        password: null,
-        created_at: new Date().toISOString(),
-        auth_method: 'google'
-      });
+      await addUserToDb(email, null, email, name);
     }
 
-    db.users = dbUsers;
-    await writeDb(db);
+    await logToDb('info', 'Google OAuth login successful', { email, name }, req);
 
     // Перенаправляем на главную с успешным входом
     // Используем query параметр для передачи информации о пользователе
