@@ -39,15 +39,8 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method Not Allowed' });
     }
     
-    // Проверяем, что это multipart/form-data
-    const contentType = req.headers['content-type'] || '';
-    if (!contentType.includes('multipart/form-data')) {
-      console.error('[UPLOAD-BOOK] Неверный Content-Type:', contentType);
-      return res.status(400).json({ 
-        error: 'Неверный Content-Type', 
-        details: `Ожидается multipart/form-data, получен: ${contentType}` 
-      });
-    }
+    // Не проверяем Content-Type строго - FormData может не устанавливать его автоматически
+    // Браузер сам установит правильный заголовок с boundary
 
     // Инициализируем БД при первом запросе
     try {
@@ -79,15 +72,25 @@ export default async function handler(req, res) {
         uploadDir: BOOKS_PATH,
         keepExtensions: true,
         maxFileSize: 16 * 1024 * 1024, // 16MB
+        multiples: false, // Только один файл
       });
 
-      form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error('Ошибка парсинга формы:', err);
-        return res.status(500).json({ error: 'Ошибка обработки файла' });
-      }
+      // Используем Promise для правильной обработки асинхронности
+      const parseForm = () => {
+        return new Promise((resolve, reject) => {
+          form.parse(req, (err, fields, files) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve({ fields, files });
+            }
+          });
+        });
+      };
 
       try {
+        const { fields, files } = await parseForm();
+
         console.log('[UPLOAD-BOOK] Получены данные:', { 
           fields: Object.keys(fields), 
           files: files ? Object.keys(files) : 'нет файлов' 
@@ -217,25 +220,27 @@ export default async function handler(req, res) {
           res.status(400).json({ error: result.message || 'Не удалось добавить книгу' });
         }
       } catch (error) {
-        console.error('Ошибка обработки:', error);
+        console.error('[UPLOAD-BOOK] Ошибка обработки:', error);
         // Безопасное логирование - не блокируем ответ если логирование не удалось
         try {
           await logToDb('error', 'Upload book processing error', { error: error.message, stack: error.stack }, req);
         } catch (logError) {
           console.error('Ошибка логирования:', logError);
         }
-        res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
+        
+        if (!res.headersSent) {
+          res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
+        }
       }
-      });
     } catch (error) {
       console.error('[UPLOAD-BOOK] Критическая ошибка:', error);
-    // Безопасное логирование - не блокируем ответ если логирование не удалось
-    try {
-      await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
-    } catch (logError) {
-      console.error('Ошибка логирования:', logError);
-    }
-    
+      // Безопасное логирование - не блокируем ответ если логирование не удалось
+      try {
+        await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
+      } catch (logError) {
+        console.error('Ошибка логирования:', logError);
+      }
+      
       // Убеждаемся, что мы всегда возвращаем ответ
       if (!res.headersSent) {
         res.status(500).json({ 
