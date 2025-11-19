@@ -122,7 +122,12 @@ export default async function handler(req, res) {
         const result = await addBook(bookData);
         
         if (result.success) {
-          await logToDb('info', 'Book uploaded and added', { bookId: result.id, title, filename: normalizedFilename }, req);
+          // Безопасное логирование
+          try {
+            await logToDb('info', 'Book uploaded and added', { bookId: result.id, title, filename: normalizedFilename }, req);
+          } catch (logError) {
+            console.error('Ошибка логирования:', logError);
+          }
           res.status(200).json({ 
             message: 'Книга и файл успешно добавлены', 
             id: result.id,
@@ -135,18 +140,33 @@ export default async function handler(req, res) {
           } catch (e) {
             console.error('Ошибка удаления файла:', e);
           }
-          await logToDb('warning', 'Failed to add uploaded book', { title, reason: result.message }, req);
+          // Безопасное логирование
+          try {
+            await logToDb('warning', 'Failed to add uploaded book', { title, reason: result.message }, req);
+          } catch (logError) {
+            console.error('Ошибка логирования:', logError);
+          }
           res.status(400).json({ error: result.message || 'Не удалось добавить книгу' });
         }
       } catch (error) {
         console.error('Ошибка обработки:', error);
-        await logToDb('error', 'Upload book processing error', { error: error.message, stack: error.stack }, req);
+        // Безопасное логирование - не блокируем ответ если логирование не удалось
+        try {
+          await logToDb('error', 'Upload book processing error', { error: error.message, stack: error.stack }, req);
+        } catch (logError) {
+          console.error('Ошибка логирования:', logError);
+        }
         res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
       }
     });
   } catch (error) {
     console.error('Ошибка загрузки файла:', error);
-    await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
+    // Безопасное логирование - не блокируем ответ если логирование не удалось
+    try {
+      await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
+    } catch (logError) {
+      console.error('Ошибка логирования:', logError);
+    }
     res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
