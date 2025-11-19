@@ -6,12 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "vercel-build": "next build"
+    "vercel-build": "next build",
+    "init-db": "node scripts/init-db.js",
+    "migrate": "node scripts/migrate-to-pg.js"
   },
   "license": "ISC",
   "dependencies": {
+    "@vercel/postgres": "^0.5.1",
     "formidable": "^3.5.4",
     "next": "^16.0.1",
+    "pg": "^8.11.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

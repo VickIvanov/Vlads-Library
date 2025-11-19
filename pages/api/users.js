@@ -1,5 +1,7 @@
 import { getAllUsers, getUsersFromEnv } from '../../lib/users.js';
-import { readDb } from '../../lib/db.js';
+import { getAllUsersFromDb } from '../../lib/db.js';
+import { logToDb } from '../../lib/logger.js';
+import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 
 // Парсим пользователей из .env для получения паролей
 function parseUsersFromEnv() {
@@ -23,14 +25,16 @@ function parseUsersFromEnv() {
 }
 
 export default async function handler(req, res) {
+  // Инициализируем БД при первом запросе
+  await ensureDatabaseInitialized();
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    // Получаем пользователей из database.json
-    const db = await readDb();
-    const dbUsers = db.users || [];
+    // Получаем пользователей из PostgreSQL
+    const dbUsers = await getAllUsersFromDb();
     
     // Получаем пароли из .env
     const envUsersWithPasswords = parseUsersFromEnv();
@@ -86,9 +90,11 @@ export default async function handler(req, res) {
       }
     }
 
+    await logToDb('info', 'Users list requested', { count: uniqueUsers.length }, req);
     res.status(200).json(uniqueUsers);
   } catch (error) {
     console.error('Ошибка получения пользователей:', error);
+    await logToDb('error', 'Failed to get users', { error: error.message }, req);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 }
