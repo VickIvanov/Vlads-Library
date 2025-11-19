@@ -24,45 +24,48 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  console.log('[UPLOAD-BOOK] Запрос получен:', { method: req.method, url: req.url });
-  
-  if (req.method !== 'POST') {
-    console.log('[UPLOAD-BOOK] Неверный метод:', req.method);
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  // Инициализируем БД при первом запросе
+  // Убеждаемся, что мы всегда возвращаем ответ
   try {
-    console.log('[UPLOAD-BOOK] Инициализация БД...');
-    await ensureDatabaseInitialized();
-    console.log('[UPLOAD-BOOK] БД инициализирована');
-  } catch (dbInitError) {
-    console.error('[UPLOAD-BOOK] Ошибка инициализации БД:', dbInitError);
-    return res.status(500).json({ 
-      error: 'Ошибка инициализации базы данных', 
-      details: dbInitError.message || 'Не удалось подключиться к базе данных. Проверьте настройки подключения.' 
-    });
-  }
-
-  try {
-    const BOOKS_PATH = getBooksDirPath();
+    console.log('[UPLOAD-BOOK] Запрос получен:', { method: req.method, url: req.url, headers: Object.keys(req.headers || {}) });
     
-    // Создаем папку, если её нет
-    try {
-      await mkdir(BOOKS_PATH, { recursive: true });
-    } catch (error) {
-      if (error.code !== 'EEXIST') {
-        console.error('Ошибка создания папки:', error);
-      }
+    if (req.method !== 'POST') {
+      console.log('[UPLOAD-BOOK] Неверный метод:', req.method);
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const form = new IncomingForm({
-      uploadDir: BOOKS_PATH,
-      keepExtensions: true,
-      maxFileSize: 16 * 1024 * 1024, // 16MB
-    });
+    // Инициализируем БД при первом запросе
+    try {
+      console.log('[UPLOAD-BOOK] Инициализация БД...');
+      const dbInitResult = await ensureDatabaseInitialized();
+      console.log('[UPLOAD-BOOK] БД инициализирована:', dbInitResult);
+      
+      if (!dbInitResult) {
+        console.warn('[UPLOAD-BOOK] БД не инициализирована, но продолжаем...');
+      }
+    } catch (dbInitError) {
+      console.error('[UPLOAD-BOOK] Ошибка инициализации БД:', dbInitError);
+      // Не блокируем запрос, если БД не инициализирована - вернем ошибку позже
+    }
 
-    form.parse(req, async (err, fields, files) => {
+    try {
+      const BOOKS_PATH = getBooksDirPath();
+      
+      // Создаем папку, если её нет
+      try {
+        await mkdir(BOOKS_PATH, { recursive: true });
+      } catch (error) {
+        if (error.code !== 'EEXIST') {
+          console.error('Ошибка создания папки:', error);
+        }
+      }
+
+      const form = new IncomingForm({
+        uploadDir: BOOKS_PATH,
+        keepExtensions: true,
+        maxFileSize: 16 * 1024 * 1024, // 16MB
+      });
+
+      form.parse(req, async (err, fields, files) => {
       if (err) {
         console.error('Ошибка парсинга формы:', err);
         return res.status(500).json({ error: 'Ошибка обработки файла' });
@@ -207,16 +210,32 @@ export default async function handler(req, res) {
         }
         res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
       }
-    });
-  } catch (error) {
-    console.error('Ошибка загрузки файла:', error);
+      });
+    } catch (error) {
+      console.error('[UPLOAD-BOOK] Критическая ошибка:', error);
     // Безопасное логирование - не блокируем ответ если логирование не удалось
     try {
       await logToDb('error', 'Upload book handler error', { error: error.message, stack: error.stack }, req);
     } catch (logError) {
       console.error('Ошибка логирования:', logError);
     }
-    res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
+    
+      // Убеждаемся, что мы всегда возвращаем ответ
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: error.message || 'Внутренняя ошибка сервера',
+          details: 'Произошла ошибка при обработке запроса. Проверьте логи сервера.'
+        });
+      }
+    }
+  } catch (outerError) {
+    console.error('[UPLOAD-BOOK] Внешняя ошибка:', outerError);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Критическая ошибка сервера',
+        details: outerError.message || 'Неизвестная ошибка'
+      });
+    }
   }
 }
 
