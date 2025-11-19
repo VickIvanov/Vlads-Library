@@ -24,11 +24,24 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // Инициализируем БД при первом запросе
-  await ensureDatabaseInitialized();
+  console.log('[UPLOAD-BOOK] Запрос получен:', { method: req.method, url: req.url });
   
   if (req.method !== 'POST') {
+    console.log('[UPLOAD-BOOK] Неверный метод:', req.method);
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // Инициализируем БД при первом запросе
+  try {
+    console.log('[UPLOAD-BOOK] Инициализация БД...');
+    await ensureDatabaseInitialized();
+    console.log('[UPLOAD-BOOK] БД инициализирована');
+  } catch (dbInitError) {
+    console.error('[UPLOAD-BOOK] Ошибка инициализации БД:', dbInitError);
+    return res.status(500).json({ 
+      error: 'Ошибка инициализации базы данных', 
+      details: dbInitError.message || 'Не удалось подключиться к базе данных. Проверьте настройки подключения.' 
+    });
   }
 
   try {

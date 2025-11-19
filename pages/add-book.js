@@ -136,21 +136,26 @@ export default function AddBook() {
         formData.append('description', form.description);
         formData.append('cover', form.cover || 'https://via.placeholder.com/300x400/4a5568/ffffff?text=No+Cover');
         
+        console.log('[ADD-BOOK] Отправка запроса на /api/upload-book');
         res = await fetch('/api/upload-book', {
           method: 'POST',
           body: formData
         });
+        
+        console.log('[ADD-BOOK] Ответ получен:', { status: res.status, statusText: res.statusText, ok: res.ok });
         
         // Проверяем статус ответа
         if (!res.ok) {
           let errorData;
           try {
             const text = await res.text();
+            console.log('[ADD-BOOK] Текст ошибки:', text);
             errorData = JSON.parse(text);
           } catch (e) {
-            errorData = { error: `Ошибка ${res.status}: ${res.statusText}` };
+            console.error('[ADD-BOOK] Ошибка парсинга ответа:', e);
+            errorData = { error: `Ошибка ${res.status}: ${res.statusText}`, details: 'Не удалось распарсить ответ сервера' };
           }
-          console.error('Ошибка загрузки книги:', errorData);
+          console.error('[ADD-BOOK] Ошибка загрузки книги:', errorData);
           const errorMessage = errorData.details 
             ? `${errorData.error}\n\nДетали: ${errorData.details}`
             : errorData.error || `Ошибка: ${res.status} ${res.statusText}`;
