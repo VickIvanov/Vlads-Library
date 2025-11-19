@@ -26,11 +26,27 @@ export const config = {
 export default async function handler(req, res) {
   // Убеждаемся, что мы всегда возвращаем ответ
   try {
-    console.log('[UPLOAD-BOOK] Запрос получен:', { method: req.method, url: req.url, headers: Object.keys(req.headers || {}) });
+    console.log('[UPLOAD-BOOK] === НАЧАЛО ОБРАБОТКИ ===');
+    console.log('[UPLOAD-BOOK] Запрос получен:', { 
+      method: req.method, 
+      url: req.url, 
+      headers: Object.keys(req.headers || {}),
+      contentType: req.headers['content-type']
+    });
     
     if (req.method !== 'POST') {
       console.log('[UPLOAD-BOOK] Неверный метод:', req.method);
       return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+    
+    // Проверяем, что это multipart/form-data
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.includes('multipart/form-data')) {
+      console.error('[UPLOAD-BOOK] Неверный Content-Type:', contentType);
+      return res.status(400).json({ 
+        error: 'Неверный Content-Type', 
+        details: `Ожидается multipart/form-data, получен: ${contentType}` 
+      });
     }
 
     // Инициализируем БД при первом запросе
