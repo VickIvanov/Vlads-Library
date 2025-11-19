@@ -5,6 +5,7 @@ export default function Home() {
   const router = useRouter();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -12,14 +13,22 @@ export default function Home() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ username: '', password: '' });
 
-  const loadBooks = async () => {
+  const loadBooks = async (showRefreshing = false) => {
     try {
-      setLoading(true);
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const res = await fetch('/api/books');
       if (!res.ok) {
         console.error('Ошибка загрузки книг:', res.status, res.statusText);
         setBooks([]);
-        setLoading(false);
+        if (showRefreshing) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
         return;
       }
       const data = await res.json();
@@ -28,7 +37,11 @@ export default function Home() {
       console.error('Ошибка загрузки книг:', error);
       setBooks([]);
     } finally {
-      setLoading(false);
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -245,6 +258,30 @@ export default function Home() {
           📚 Космическая Библиотека
         </h1>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Кнопка обновления библиотеки - видна всем */}
+          <button 
+            onClick={() => loadBooks(true)}
+            disabled={loading || refreshing}
+            style={{ 
+              padding: '12px 24px', 
+              backgroundColor: (loading || refreshing) ? '#9ca3af' : '#10b981', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px',
+              cursor: (loading || refreshing) ? 'not-allowed' : 'pointer',
+              fontSize: '16px',
+              fontWeight: '600',
+              boxShadow: (loading || refreshing) ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.4)',
+              transition: 'all 0.3s ease',
+              opacity: (loading || refreshing) ? 0.7 : 1
+            }}
+            onMouseOver={(e) => !(loading || refreshing) && (e.target.style.transform = 'translateY(-2px)')}
+            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+            title="Обновить список книг"
+          >
+            {refreshing ? '⏳ Обновление...' : '🔄 Обновить библиотеку'}
+          </button>
+          
           {currentUser ? (
             <>
               <span style={{ 
