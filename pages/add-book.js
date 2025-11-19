@@ -143,9 +143,18 @@ export default function AddBook() {
         
         // Проверяем статус ответа
         if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ error: 'Неизвестная ошибка сервера' }));
+          let errorData;
+          try {
+            const text = await res.text();
+            errorData = JSON.parse(text);
+          } catch (e) {
+            errorData = { error: `Ошибка ${res.status}: ${res.statusText}` };
+          }
           console.error('Ошибка загрузки книги:', errorData);
-          alert(errorData.error || `Ошибка: ${res.status} ${res.statusText}`);
+          const errorMessage = errorData.details 
+            ? `${errorData.error}\n\nДетали: ${errorData.details}`
+            : errorData.error || `Ошибка: ${res.status} ${res.statusText}`;
+          alert(errorMessage);
           setLoading(false);
           return;
         }

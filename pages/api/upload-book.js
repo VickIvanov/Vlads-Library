@@ -71,28 +71,55 @@ export default async function handler(req, res) {
         console.log('[UPLOAD-BOOK] Распарсенные данные:', { title, author, genre, hasFile: !!file });
 
         if (!file) {
-          return res.status(400).json({ error: 'Файл не загружен' });
+          console.error('[UPLOAD-BOOK] Файл не найден в запросе');
+          return res.status(400).json({ error: 'Файл не загружен', details: 'Поле file отсутствует в запросе' });
         }
 
         const fileObj = Array.isArray(file) ? file[0] : file;
+        console.log('[UPLOAD-BOOK] Информация о файле:', { 
+          originalFilename: fileObj.originalFilename,
+          name: fileObj.name,
+          size: fileObj.size,
+          mimetype: fileObj.mimetype
+        });
 
         // Проверяем формат файла
         const fileName = fileObj.originalFilename || fileObj.name || '';
         if (!fileName.toLowerCase().endsWith('.txt')) {
+          console.error('[UPLOAD-BOOK] Неверный формат файла:', fileName);
           // Удаляем временный файл
           try {
             await unlink(fileObj.filepath);
           } catch (e) {}
-          return res.status(400).json({ error: 'Разрешены только файлы формата .txt' });
+          return res.status(400).json({ error: 'Разрешены только файлы формата .txt', details: `Получен файл: ${fileName}` });
         }
 
         // Валидация обязательных полей
-        if (!title || !author || !genre) {
+        if (!title || !title.trim()) {
+          console.error('[UPLOAD-BOOK] Отсутствует title:', title);
           // Удаляем временный файл
           try {
             await unlink(fileObj.filepath);
           } catch (e) {}
-          return res.status(400).json({ error: 'title, author и genre обязательны' });
+          return res.status(400).json({ error: 'Название книги обязательно', details: 'Поле title пустое или отсутствует' });
+        }
+        
+        if (!author || !author.trim()) {
+          console.error('[UPLOAD-BOOK] Отсутствует author:', author);
+          // Удаляем временный файл
+          try {
+            await unlink(fileObj.filepath);
+          } catch (e) {}
+          return res.status(400).json({ error: 'Автор обязателен', details: 'Поле author пустое или отсутствует' });
+        }
+        
+        if (!genre || !genre.trim()) {
+          console.error('[UPLOAD-BOOK] Отсутствует genre:', genre);
+          // Удаляем временный файл
+          try {
+            await unlink(fileObj.filepath);
+          } catch (e) {}
+          return res.status(400).json({ error: 'Жанр обязателен', details: 'Поле genre пустое или отсутствует' });
         }
 
         // Нормализуем имя файла
