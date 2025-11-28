@@ -9,8 +9,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [privacySettings, setPrivacySettings] = useState({
     show_favorites: true,
-    show_description: true,
-    show_user_id: true
+    show_description: true
   });
 
   useEffect(() => {
@@ -31,7 +30,10 @@ export default function Profile() {
       const res = await fetch(`/api/user-privacy?username=${encodeURIComponent(currentUser)}`);
       if (res.ok) {
         const data = await res.json();
-        setPrivacySettings(data);
+        setPrivacySettings({
+          show_favorites: data.show_favorites !== false,
+          show_description: data.show_description !== false
+        });
       }
     } catch (error) {
       console.error('Ошибка загрузки настроек приватности:', error);
@@ -203,15 +205,6 @@ export default function Profile() {
             />
             <span style={{ fontSize: '16px', color: '#333' }}>Показывать описание профиля</span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={privacySettings.show_user_id}
-              onChange={(e) => setPrivacySettings({...privacySettings, show_user_id: e.target.checked})}
-              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-            />
-            <span style={{ fontSize: '16px', color: '#333' }}>Показывать ID (@user_id) другим пользователям</span>
-          </label>
           <button
             onClick={savePrivacySettings}
             style={{
@@ -283,73 +276,109 @@ export default function Profile() {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '15px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+            gap: '20px'
+          }}>
             {favorites.map((book) => (
               <div
                 key={book.id}
                 style={{
-                  padding: '20px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '12px',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.3s ease'
+                  flexDirection: 'column',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  position: 'relative'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = '#667eea';
-                  e.currentTarget.style.backgroundColor = '#f0f4ff';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
+                onClick={() => router.push(`/reader?id=${encodeURIComponent(book.id)}`)}
               >
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '5px' }}>
-                    {book.title}
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
-                    Автор: {book.author}
-                  </div>
-                  {book.genre && (
-                    <div style={{ fontSize: '12px', color: '#999' }}>
-                      Жанр: {book.genre}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Обложка книги */}
+                <div style={{
+                  width: '100%',
+                  aspectRatio: '3/4',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '48px',
+                  fontWeight: 'bold',
+                  marginBottom: '10px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  {book.title ? book.title.charAt(0).toUpperCase() : '📚'}
+                  {/* Кнопка удаления */}
                   <button
-                    onClick={() => router.push(`/reader?id=${encodeURIComponent(book.id)}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFromFavorites(book.id);
+                    }}
                     style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#667eea',
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(239, 68, 68, 0.9)',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 1)';
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.9)';
+                      e.currentTarget.style.transform = 'scale(1)';
                     }}
                   >
-                    Читать
-                  </button>
-                  <button
-                    onClick={() => removeFromFavorites(book.id)}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Удалить
+                    ×
                   </button>
                 </div>
+                {/* Название книги */}
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#333',
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  padding: '0 4px'
+                }}>
+                  {book.title}
+                </div>
+                {book.author && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    padding: '0 4px',
+                    marginTop: '4px'
+                  }}>
+                    {book.author}
+                  </div>
+                )}
               </div>
             ))}
           </div>

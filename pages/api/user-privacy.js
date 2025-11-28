@@ -18,12 +18,11 @@ export default async function handler(req, res) {
       return res.status(200).json(settings);
     } else if (req.method === 'POST') {
       // Сохранить настройки приватности
-      const { show_favorites, show_description, show_user_id } = req.body;
+      const { show_favorites, show_description } = req.body;
       
       const result = await saveUserPrivacySettings(username, {
-        show_favorites,
-        show_description,
-        show_user_id
+        show_favorites: show_favorites === true || show_favorites === 'true',
+        show_description: show_description === true || show_description === 'true'
       });
       
       if (result.success) {

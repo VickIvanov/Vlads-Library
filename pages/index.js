@@ -127,6 +127,16 @@ export default function Home() {
         setCurrentUser(data.username);
         // Сохраняем в localStorage
         localStorage.setItem('currentUser', data.username);
+        // Обновляем статус пользователя на "online"
+        try {
+          await fetch('/api/user-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: data.username, status: 'online' })
+          });
+        } catch (error) {
+          console.error('Ошибка обновления статуса:', error);
+        }
         // Проверяем через API, является ли пользователь админом
         try {
           const adminRes = await fetch(`/api/check-admin?username=${encodeURIComponent(data.username)}`);
@@ -211,10 +221,23 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const username = localStorage.getItem('currentUser');
+    if (username) {
+      // Обновляем статус пользователя на "offline" при выходе
+      try {
+        await fetch('/api/user-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, status: 'offline' })
+        });
+      } catch (error) {
+        console.error('Ошибка обновления статуса:', error);
+      }
+    }
+    localStorage.removeItem('currentUser');
     setCurrentUser(null);
     setIsUserAdmin(false);
-    localStorage.removeItem('currentUser');
   };
 
   useEffect(() => { 

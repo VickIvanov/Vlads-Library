@@ -1,4 +1,4 @@
-import { sendMessage, getConversation, getUserChats, markMessagesAsRead, getUnreadCount } from '../../lib/db.js';
+import { sendMessage, getConversation, getUserChats, markMessagesAsRead, getUnreadCount, editMessage, deleteMessage } from '../../lib/db.js';
 import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 import { logToDb } from '../../lib/logger.js';
 
@@ -57,6 +57,40 @@ export default async function handler(req, res) {
         return res.status(200).json(conversation);
       } else {
         return res.status(400).json({ error: 'Укажите otherUsername или action' });
+      }
+    } else if (req.method === 'PUT') {
+      // Редактирование сообщения
+      const { messageId, senderUsername, content } = req.body;
+      
+      if (!messageId || !senderUsername || !content) {
+        return res.status(400).json({ error: 'Заполните все поля' });
+      }
+      
+      if (!content.trim()) {
+        return res.status(400).json({ error: 'Сообщение не может быть пустым' });
+      }
+      
+      const result = await editMessage(messageId, senderUsername, content.trim());
+      
+      if (result.success) {
+        return res.status(200).json({ message: 'Сообщение отредактировано', data: result.message });
+      } else {
+        return res.status(400).json({ error: result.message || 'Ошибка редактирования сообщения' });
+      }
+    } else if (req.method === 'DELETE') {
+      // Удаление сообщения
+      const { messageId, senderUsername } = req.body;
+      
+      if (!messageId || !senderUsername) {
+        return res.status(400).json({ error: 'ID сообщения и имя пользователя обязательны' });
+      }
+      
+      const result = await deleteMessage(messageId, senderUsername);
+      
+      if (result.success) {
+        return res.status(200).json({ message: 'Сообщение удалено', data: result.message });
+      } else {
+        return res.status(400).json({ error: result.message || 'Ошибка удаления сообщения' });
       }
     } else {
       return res.status(405).json({ error: 'Method Not Allowed' });

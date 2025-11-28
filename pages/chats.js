@@ -21,6 +21,9 @@ export default function Chats() {
   const [chatNicknames, setChatNicknames] = useState({});
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userMenuNickname, setUserMenuNickname] = useState('');
+  const [userStatus, setUserStatus] = useState({ status: 'offline', last_seen: null });
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
 
   useEffect(() => {
     // Проверяем, залогинен ли пользователь
@@ -40,6 +43,20 @@ export default function Chats() {
     loadChats();
     loadUnreadCount();
     loadChatNicknames();
+    
+    // Обновляем статус пользователя на "online" при входе
+    updateUserStatus('online');
+    
+    // Обновляем статус каждые 30 секунд
+    const statusInterval = setInterval(() => {
+      updateUserStatus('online');
+    }, 30000);
+    
+    // Обновляем статус при выходе
+    return () => {
+      clearInterval(statusInterval);
+      updateUserStatus('offline');
+    };
     
     // Настраиваем Server-Sent Events для реального времени
     if (typeof EventSource !== 'undefined') {
@@ -124,6 +141,17 @@ export default function Chats() {
   useEffect(() => {
     if (selectedChat) {
       loadMessages(selectedChat);
+      loadUserStatus(selectedChat);
+    }
+  }, [selectedChat]);
+  
+  useEffect(() => {
+    // Обновляем статус собеседника каждые 10 секунд
+    if (selectedChat) {
+      const statusInterval = setInterval(() => {
+        loadUserStatus(selectedChat);
+      }, 10000);
+      return () => clearInterval(statusInterval);
     }
   }, [selectedChat]);
 
@@ -345,6 +373,104 @@ export default function Chats() {
 
   const getDisplayName = (username) => {
     return chatNicknames[username] || username;
+  };
+  
+  const updateUserStatus = async (status) => {
+    if (!currentUser) return;
+    try {
+      await fetch('/api/user-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, status })
+      });
+    } catch (error) {
+      console.error('Ошибка обновления статуса:', error);
+    }
+  };
+  
+  const loadUserStatus = async (username) => {
+    if (!username) return;
+    try {
+      const res = await fetch(`/api/user-status?username=${encodeURIComponent(username)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatus(data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки статуса пользователя:', error);
+    }
+  };
+  
+  const handleEditMessage = async (messageId, currentContent) => {
+    setEditingMessageId(messageId);
+    setEditingContent(currentContent);
+  };
+  
+  const saveEditMessage = async (messageId) => {
+    if (!editingContent.trim() || !currentUser) return;
+    
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          senderUsername: currentUser,
+          content: editingContent.trim()
+        })
+      });
+      
+      if (res.ok) {
+        setEditingMessageId(null);
+        setEditingContent('');
+        loadMessages(selectedChat);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Ошибка редактирования сообщения');
+      }
+    } catch (error) {
+      console.error('Ошибка редактирования сообщения:', error);
+      alert('Ошибка редактирования сообщения');
+    }
+  };
+  
+  const handleDeleteMessage = async (messageId) => {
+    if (!currentUser || !confirm('Вы уверены, что хотите удалить это сообщение?')) return;
+    
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          senderUsername: currentUser
+        })
+      });
+      
+      if (res.ok) {
+        loadMessages(selectedChat);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Ошибка удаления сообщения');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления сообщения:', error);
+      alert('Ошибка удаления сообщения');
+    }
+  };
+  
+  const formatLastSeen = (lastSeen) => {
+    if (!lastSeen) return 'никогда';
+    const date = new Date(lastSeen);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    
+    if (minutes < 1) return 'только что';
+    if (minutes < 60) return `${minutes} мин назад`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)} ч назад`;
+    
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
   // Отслеживание ввода текста для статуса "пишет"
@@ -589,32 +715,46 @@ export default function Chats() {
                 borderBottom: '2px solid #e2e8f0',
                 marginBottom: '15px'
               }}>
-                <h2 
-                  style={{ 
-                    margin: 0, 
-                    fontSize: '20px', 
-                    color: '#333',
-                    cursor: 'pointer',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s',
-                    display: 'inline-block'
-                  }}
-                  onClick={() => {
-                    setShowUserMenu(true);
-                    setUserMenuNickname(chatNicknames[selectedChat] || '');
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = '#f0f4ff';
-                    e.target.style.color = '#667eea';
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.color = '#333';
-                  }}
-                >
-                  {getDisplayName(selectedChat)}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <h2 
+                    style={{ 
+                      margin: 0, 
+                      fontSize: '20px', 
+                      color: '#333',
+                      cursor: 'pointer',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s',
+                      display: 'inline-block'
+                    }}
+                    onClick={() => {
+                      setShowUserMenu(true);
+                      setUserMenuNickname(chatNicknames[selectedChat] || '');
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = '#f0f4ff';
+                      e.target.style.color = '#667eea';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                      e.target.style.color = '#333';
+                    }}
+                  >
+                    {getDisplayName(selectedChat)}
+                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      backgroundColor: userStatus.status === 'online' ? '#10b981' : '#6b7280'
+                    }} />
+                    <span>
+                      {userStatus.status === 'online' ? 'В сети' : `Был(а) ${formatLastSeen(userStatus.last_seen)}`}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Модальное окно профиля пользователя */}
@@ -873,46 +1013,178 @@ export default function Chats() {
                   <>
                     {messages.map((msg) => {
                       const isOwn = msg.sender_username === currentUser;
+                      const isEditing = editingMessageId === msg.id;
                       return (
                         <div
                           key={msg.id}
                           style={{
                             alignSelf: isOwn ? 'flex-end' : 'flex-start',
-                            maxWidth: '70%'
+                            maxWidth: '70%',
+                            position: 'relative'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (isOwn) {
+                              const buttons = e.currentTarget.querySelector('.message-actions');
+                              if (buttons) buttons.style.display = 'flex';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (isOwn && !isEditing) {
+                              const buttons = e.currentTarget.querySelector('.message-actions');
+                              if (buttons) buttons.style.display = 'none';
+                            }
                           }}
                         >
-                          <div style={{
-                            padding: '10px 14px',
-                            background: isOwn ? '#667eea' : '#e2e8f0',
-                            color: isOwn ? 'white' : '#333',
-                            borderRadius: '12px',
-                            fontSize: '14px',
-                            wordWrap: 'break-word'
-                          }}>
-                            {msg.content}
-                          </div>
-                          <div style={{
-                            fontSize: '11px',
-                            color: '#999',
-                            marginTop: '4px',
-                            textAlign: isOwn ? 'right' : 'left',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            justifyContent: isOwn ? 'flex-end' : 'flex-start'
-                          }}>
-                            <span>{formatMessageTime(msg.created_at)}</span>
-                            {isOwn && (
-                              <span style={{ 
-                                fontSize: '14px', 
-                                color: msg.read_status ? '#667eea' : '#999',
-                                fontWeight: 'bold',
-                                marginLeft: '4px'
+                          {isEditing ? (
+                            <div style={{
+                              padding: '10px 14px',
+                              background: '#f0f4ff',
+                              borderRadius: '12px',
+                              border: '2px solid #667eea',
+                              minWidth: '200px'
+                            }}>
+                              <input
+                                type="text"
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    saveEditMessage(msg.id);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingMessageId(null);
+                                    setEditingContent('');
+                                  }
+                                }}
+                                autoFocus
+                                style={{
+                                  width: '100%',
+                                  padding: '8px',
+                                  border: '1px solid #667eea',
+                                  borderRadius: '6px',
+                                  fontSize: '14px',
+                                  outline: 'none'
+                                }}
+                              />
+                              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                <button
+                                  onClick={() => saveEditMessage(msg.id)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#667eea',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Сохранить
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMessageId(null);
+                                    setEditingContent('');
+                                  }}
+                                  style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{
+                                padding: '10px 14px',
+                                background: isOwn ? '#667eea' : '#e2e8f0',
+                                color: isOwn ? 'white' : '#333',
+                                borderRadius: '12px',
+                                fontSize: '14px',
+                                wordWrap: 'break-word',
+                                position: 'relative'
                               }}>
-                                {msg.read_status ? '✓✓ Прочитано' : '✓ Отправлено'}
-                              </span>
-                            )}
-                          </div>
+                                {msg.content}
+                                {isOwn && (
+                                  <div className="message-actions" style={{
+                                    display: 'none',
+                                    position: 'absolute',
+                                    top: '-30px',
+                                    right: '0',
+                                    gap: '4px',
+                                    background: 'white',
+                                    padding: '4px',
+                                    borderRadius: '6px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                  }}>
+                                    <button
+                                      onClick={() => handleEditMessage(msg.id, msg.content)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        backgroundColor: '#667eea',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        cursor: 'pointer'
+                                      }}
+                                      title="Редактировать"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMessage(msg.id)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        backgroundColor: '#ef4444',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        cursor: 'pointer'
+                                      }}
+                                      title="Удалить"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{
+                                fontSize: '11px',
+                                color: '#999',
+                                marginTop: '4px',
+                                textAlign: isOwn ? 'right' : 'left',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                justifyContent: isOwn ? 'flex-end' : 'flex-start'
+                              }}>
+                                <span>{formatMessageTime(msg.created_at)}</span>
+                                {msg.edited_at && (
+                                  <span style={{ fontSize: '10px', fontStyle: 'italic' }}>
+                                    (изменено)
+                                  </span>
+                                )}
+                                {isOwn && (
+                                  <span style={{ 
+                                    fontSize: '14px', 
+                                    color: msg.read_status ? '#667eea' : '#999',
+                                    fontWeight: 'bold',
+                                    marginLeft: '4px'
+                                  }}>
+                                    {msg.read_status ? '✓✓ Прочитано' : '✓ Отправлено'}
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })}
