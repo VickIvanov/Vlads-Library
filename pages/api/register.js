@@ -9,8 +9,8 @@ export default async function handler(req, res) {
 
   try {
     const { username, password, userId } = req.body;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Заполните все поля' });
+    if (!username || !password || !userId) {
+      return res.status(400).json({ error: 'Заполните все поля, включая уникальный ID' });
     }
 
     // Проверяем длину пароля
@@ -18,7 +18,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Пароль должен содержать минимум 5 символов' });
     }
     
-    // Валидация user_id если указан
+    // Валидация user_id (обязательное поле)
+    if (!userId || !userId.trim()) {
+      return res.status(400).json({ error: 'Уникальный ID обязателен для регистрации' });
+    }
+    
     let normalizedUserId = null;
     if (userId) {
       // Убираем @ в начале если есть

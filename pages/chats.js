@@ -23,6 +23,13 @@ export default function Chats() {
       return;
     }
     setCurrentUser(user);
+    
+    // Восстанавливаем выбранный чат из localStorage
+    const savedChat = localStorage.getItem('selectedChat');
+    if (savedChat) {
+      setSelectedChat(savedChat);
+    }
+    
     loadChats();
     loadUnreadCount();
     
@@ -39,9 +46,30 @@ export default function Chats() {
             // Обновляем чаты и сообщения при получении новых
             loadChats();
             loadUnreadCount();
+            
+            // Если есть новые сообщения, проверяем нужно ли открыть чат
+            const newMessages = data.data;
+            if (newMessages.length > 0) {
+              const lastMessage = newMessages[newMessages.length - 1];
+              // Если сообщение для текущего пользователя, обновляем чаты и открываем чат если нужно
+              if (lastMessage.receiver_username === user) {
+                // Обновляем список чатов сразу
+                loadChats();
+                // Если чат не открыт, открываем его
+                if (!selectedChat || selectedChat !== lastMessage.sender_username) {
+                  setSelectedChat(lastMessage.sender_username);
+                  localStorage.setItem('selectedChat', lastMessage.sender_username);
+                }
+              }
+            }
+            
             if (selectedChat) {
               loadMessages(selectedChat);
             }
+          } else if (data.type === 'chats_update') {
+            // Обновляем список чатов при получении сигнала
+            loadChats();
+            loadUnreadCount();
           } else if (data.type === 'error') {
             console.error('Ошибка SSE:', data.message);
           }
@@ -69,7 +97,10 @@ export default function Chats() {
     } else {
       // Fallback: polling если SSE не поддерживается
       const interval = setInterval(() => {
-        loadChats();
+        loadChats().then(() => {
+          // После загрузки чатов проверяем, есть ли новые чаты
+          // Если есть новый чат и ничего не выбрано, открываем его
+        });
         loadUnreadCount();
         if (selectedChat) {
           loadMessages(selectedChat);
@@ -78,7 +109,7 @@ export default function Chats() {
       
       return () => clearInterval(interval);
     }
-  }, [router, selectedChat]);
+  }, [router, selectedChat, currentUser]);
 
   useEffect(() => {
     if (selectedChat) {
@@ -98,6 +129,13 @@ export default function Chats() {
       if (res.ok) {
         const data = await res.json();
         setChats(data);
+        
+        // Если нет выбранного чата, но есть чаты, открываем первый
+        if (!selectedChat && data.length > 0) {
+          const firstChat = data[0].other_username;
+          setSelectedChat(firstChat);
+          localStorage.setItem('selectedChat', firstChat);
+        }
       }
     } catch (error) {
       console.error('Ошибка загрузки чатов:', error);
@@ -158,6 +196,7 @@ export default function Chats() {
 
   const startChat = (username) => {
     setSelectedChat(username);
+    localStorage.setItem('selectedChat', username); // Сохраняем выбранный чат
     setSearchResult(null);
   };
 

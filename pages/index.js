@@ -135,30 +135,34 @@ export default function Home() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!registerForm.username || !registerForm.password) {
+    if (!registerForm.username || !registerForm.password || !registerForm.userId) {
+      alert('Заполните все поля, включая уникальный ID');
       return;
     }
-
+    
     if (registerForm.password.length < 5) {
       alert('Пароль должен содержать минимум 5 символов');
       return;
     }
     
-    // Валидация user_id если указан
-    if (registerForm.userId) {
-      const userId = registerForm.userId.trim().replace(/^@+/, '');
-      if (!/^[a-zA-Z0-9_\-]+$/.test(userId)) {
-        alert('ID может содержать только буквы, цифры, подчеркивания и дефисы');
-        return;
-      }
-      if (userId.length < 3) {
-        alert('ID должен содержать минимум 3 символа');
-        return;
-      }
-      if (userId.length > 30) {
-        alert('ID не должен превышать 30 символов');
-        return;
-      }
+    // Валидация user_id (обязательное поле)
+    if (!registerForm.userId || !registerForm.userId.trim()) {
+      alert('Уникальный ID обязателен для регистрации');
+      return;
+    }
+    
+    const userId = registerForm.userId.trim().replace(/^@+/, '');
+    if (!/^[a-zA-Z0-9_\-]+$/.test(userId)) {
+      alert('ID может содержать только буквы, цифры, подчеркивания и дефисы');
+      return;
+    }
+    if (userId.length < 3) {
+      alert('ID должен содержать минимум 3 символа');
+      return;
+    }
+    if (userId.length > 30) {
+      alert('ID не должен превышать 30 символов');
+      return;
     }
 
     setLoading(true);
@@ -169,7 +173,7 @@ export default function Home() {
         body: JSON.stringify({
           username: registerForm.username,
           password: registerForm.password,
-          userId: registerForm.userId || null
+          userId: registerForm.userId
         })
       });
       if (!res.ok) {
@@ -792,9 +796,10 @@ export default function Home() {
               />
               <input 
                 type="text"
-                placeholder="Ваш уникальный ID (например: vlad123_) - опционально" 
+                placeholder="Ваш уникальный ID (например: vlad123_)" 
                 value={registerForm.userId} 
                 onChange={e => setRegisterForm({...registerForm, userId: e.target.value})}
+                required
                 style={{
                   padding: '14px 16px',
                   border: '2px solid #e2e8f0',
@@ -807,7 +812,7 @@ export default function Home() {
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
               />
               <p style={{ margin: '-10px 0 0 0', fontSize: '12px', color: '#666' }}>
-                ID будет отображаться как @ваш_id. Можно использовать для поиска и связи с другими пользователями.
+                ID будет отображаться как @ваш_id. Обязательно для регистрации. Можно использовать для поиска и связи с другими пользователями.
               </p>
               <input 
                 type="password"

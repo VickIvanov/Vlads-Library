@@ -47,6 +47,9 @@ export default async function handler(req, res) {
         
         // Отправляем новые сообщения
         res.write(`data: ${JSON.stringify({ type: 'messages', data: newMessages.rows })}\n\n`);
+        
+        // Также отправляем сигнал обновления чатов, чтобы список чатов обновился
+        res.write(`data: ${JSON.stringify({ type: 'chats_update' })}\n\n`);
       }
 
       // Отправляем heartbeat для поддержания соединения
