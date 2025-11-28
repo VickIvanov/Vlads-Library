@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import MessageNotifications from '../components/MessageNotifications';
 
 export default function Home() {
   const router = useRouter();
@@ -276,6 +277,9 @@ export default function Home() {
         backgroundColor: 'rgba(0,0,0,0.1)',
         zIndex: 0
       }} />
+
+      {/* Message Notifications */}
+      {currentUser && <MessageNotifications currentUser={currentUser} />}
 
       {/* Header */}
       <header style={{

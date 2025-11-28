@@ -7,6 +7,11 @@ export default function Profile() {
   const [userInfo, setUserInfo] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [privacySettings, setPrivacySettings] = useState({
+    show_favorites: true,
+    show_description: true,
+    show_user_id: true
+  });
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -17,7 +22,42 @@ export default function Profile() {
     setCurrentUser(user);
     loadUserInfo();
     loadFavorites();
+    loadPrivacySettings();
   }, [router]);
+  
+  const loadPrivacySettings = async () => {
+    if (!currentUser) return;
+    try {
+      const res = await fetch(`/api/user-privacy?username=${encodeURIComponent(currentUser)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPrivacySettings(data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки настроек приватности:', error);
+    }
+  };
+  
+  const savePrivacySettings = async () => {
+    if (!currentUser) return;
+    try {
+      const res = await fetch(`/api/user-privacy?username=${encodeURIComponent(currentUser)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(privacySettings)
+      });
+      
+      if (res.ok) {
+        alert('Настройки приватности сохранены');
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Ошибка сохранения' }));
+        alert(errorData.error || 'Ошибка сохранения настроек');
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения настроек приватности:', error);
+      alert('Ошибка сохранения настроек');
+    }
+  };
 
   const loadUserInfo = async () => {
     if (!currentUser) return;
@@ -133,6 +173,62 @@ export default function Profile() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Privacy Settings */}
+      <div style={{
+        background: 'rgba(255,255,255,0.95)',
+        padding: '30px',
+        borderRadius: '15px',
+        marginBottom: '20px'
+      }}>
+        <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>🔒 Настройки приватности</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={privacySettings.show_favorites}
+              onChange={(e) => setPrivacySettings({...privacySettings, show_favorites: e.target.checked})}
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '16px', color: '#333' }}>Показывать избранные книги другим пользователям</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={privacySettings.show_description}
+              onChange={(e) => setPrivacySettings({...privacySettings, show_description: e.target.checked})}
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '16px', color: '#333' }}>Показывать описание профиля</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={privacySettings.show_user_id}
+              onChange={(e) => setPrivacySettings({...privacySettings, show_user_id: e.target.checked})}
+              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '16px', color: '#333' }}>Показывать ID (@user_id) другим пользователям</span>
+          </label>
+          <button
+            onClick={savePrivacySettings}
+            style={{
+              marginTop: '10px',
+              padding: '12px 24px',
+              backgroundColor: '#667eea',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              alignSelf: 'flex-start'
+            }}
+          >
+            💾 Сохранить настройки
+          </button>
         </div>
       </div>
 

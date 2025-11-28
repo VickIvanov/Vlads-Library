@@ -1,4 +1,4 @@
-import { addToFavorites, removeFromFavorites, getUserFavorites, isBookInFavorites } from '../../lib/db.js';
+import { addToFavorites, removeFromFavorites, getUserFavorites, isBookInFavorites, getUserPrivacySettings } from '../../lib/db.js';
 import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 import { logToDb } from '../../lib/logger.js';
 
@@ -59,6 +59,14 @@ export default async function handler(req, res) {
         return res.status(200).json({ isFavorite });
       } else if (username) {
         // Получить избранные книги пользователя
+        // Проверяем настройки приватности
+        const privacySettings = await getUserPrivacySettings(username);
+        
+        if (!privacySettings.show_favorites) {
+          // Если избранное скрыто, возвращаем пустой массив
+          return res.status(200).json([]);
+        }
+        
         const favorites = await getUserFavorites(username);
         return res.status(200).json(favorites);
       } else {

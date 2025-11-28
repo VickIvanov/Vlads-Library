@@ -18,6 +18,9 @@ export default function Chats() {
   const typingTimeoutRef = useRef(null);
   const [showFavorites, setShowFavorites] = useState(false);
   const [otherUserFavorites, setOtherUserFavorites] = useState([]);
+  const [chatNicknames, setChatNicknames] = useState({});
+  const [editingNickname, setEditingNickname] = useState(null);
+  const [nicknameInput, setNicknameInput] = useState('');
 
   useEffect(() => {
     // Проверяем, залогинен ли пользователь
@@ -36,6 +39,7 @@ export default function Chats() {
     
     loadChats();
     loadUnreadCount();
+    loadChatNicknames();
     
     // Настраиваем Server-Sent Events для реального времени
     if (typeof EventSource !== 'undefined') {
@@ -217,6 +221,16 @@ export default function Chats() {
     loadChats();
   };
 
+  // Обработка параметра open из URL (для открытия чата из уведомления)
+  useEffect(() => {
+    const { open } = router.query;
+    if (open && typeof open === 'string') {
+      startChat(open);
+      // Убираем параметр из URL
+      router.replace('/chats', undefined, { shallow: true });
+    }
+  }, [router.query]);
+
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat || !currentUser) return;
@@ -291,6 +305,46 @@ export default function Chats() {
   const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const loadChatNicknames = async () => {
+    if (!currentUser) return;
+    try {
+      const res = await fetch(`/api/chat-nicknames?username=${encodeURIComponent(currentUser)}&action=all`);
+      if (res.ok) {
+        const data = await res.json();
+        setChatNicknames(data);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки переименований:', error);
+    }
+  };
+
+  const saveNickname = async (contactUsername, nickname) => {
+    if (!currentUser || !contactUsername) return;
+    try {
+      const res = await fetch('/api/chat-nicknames', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser,
+          contactUsername: contactUsername,
+          nickname: nickname
+        })
+      });
+      
+      if (res.ok) {
+        loadChatNicknames();
+        setEditingNickname(null);
+        setNicknameInput('');
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения переименования:', error);
+    }
+  };
+
+  const getDisplayName = (username) => {
+    return chatNicknames[username] || username;
   };
 
   // Отслеживание ввода текста для статуса "пишет"
@@ -503,7 +557,7 @@ export default function Chats() {
                         transition: 'all 0.2s'
                       }}
                     >
-                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>{otherUser}</div>
+                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>{getDisplayName(otherUser)}</div>
                       <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {chat.content}
                       </div>
@@ -536,9 +590,93 @@ export default function Chats() {
                 marginBottom: '15px',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                gap: '10px'
               }}>
-                <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>{selectedChat}</h2>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {editingNickname === selectedChat ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
+                      <input
+                        type="text"
+                        value={nicknameInput}
+                        onChange={(e) => setNicknameInput(e.target.value)}
+                        placeholder="Введите имя"
+                        style={{
+                          flex: 1,
+                          padding: '6px 12px',
+                          border: '2px solid #667eea',
+                          borderRadius: '6px',
+                          fontSize: '16px',
+                          outline: 'none'
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            saveNickname(selectedChat, nicknameInput);
+                          } else if (e.key === 'Escape') {
+                            setEditingNickname(null);
+                            setNicknameInput('');
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => saveNickname(selectedChat, nicknameInput)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingNickname(null);
+                          setNicknameInput('');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>
+                        {getDisplayName(selectedChat)}
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setEditingNickname(selectedChat);
+                          setNicknameInput(chatNicknames[selectedChat] || '');
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: 'transparent',
+                          color: '#667eea',
+                          border: '1px solid #667eea',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                        title="Переименовать"
+                      >
+                        ✏️
+                      </button>
+                    </>
+                  )}
+                </div>
                 <button
                   onClick={async () => {
                     if (!showFavorites) {

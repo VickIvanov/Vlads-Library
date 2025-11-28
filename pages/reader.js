@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
+import MessageNotifications from '../components/MessageNotifications';
 
 export default function Reader() {
   const router = useRouter();
@@ -260,12 +261,16 @@ export default function Reader() {
     );
   }
 
+  const currentUser = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null;
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      display: 'flex',
-      flexDirection: 'column',
+    <>
+      {currentUser && <MessageNotifications currentUser={currentUser} />}
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
@@ -673,5 +678,6 @@ export default function Reader() {
         </>
       )}
     </div>
+    </>
   );
 }
