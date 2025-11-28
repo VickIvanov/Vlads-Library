@@ -74,9 +74,10 @@ export default async function handler(req, res) {
             console.error('[BOOK-TEXT] Файл не найден по пути:', filePath);
             return res.status(404).json({ 
               error: `Содержимое книги не найдено`,
-              details: `Файл "${filename}" не найден и содержимое отсутствует в БД. Перезагрузите книгу.`,
+              details: `Файл "${filename}" не найден и содержимое отсутствует в БД. Эта книга была загружена до обновления системы. Пожалуйста, удалите и перезагрузите книгу, чтобы содержимое сохранилось в базе данных.`,
               bookId: id,
-              bookFile: filename
+              bookFile: filename,
+              solution: 'Удалите книгу и загрузите её заново'
             });
           }
           throw accessError;

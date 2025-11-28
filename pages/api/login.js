@@ -40,7 +40,14 @@ export default async function handler(req, res) {
     }
 
     // Если не найден в .env, проверяем в PostgreSQL БД
-    const dbUsers = await getAllUsersFromDb();
+    let dbUsers = [];
+    try {
+      dbUsers = await getAllUsersFromDb();
+    } catch (dbError) {
+      console.error('Ошибка получения пользователей из БД:', dbError);
+      // Продолжаем работу, даже если БД недоступна
+    }
+    
     const dbUser = dbUsers.find(u => u.username === username && u.password === password);
 
     if (dbUser) {
@@ -71,7 +78,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Пользователь не зарегистрирован. Пожалуйста, сначала зарегистрируйтесь.' });
   } catch (error) {
     console.error('Ошибка входа:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    
+    // Безопасное логирование - не блокируем ответ если логирование не удалось
+    try {
+      await logToDb('error', 'Login error', { error: error.message }, req);
+    } catch (logError) {
+      console.error('Ошибка логирования:', logError);
+    }
+    
+    res.status(500).json({ 
+      error: 'Внутренняя ошибка сервера',
+      details: error.message || 'Неизвестная ошибка'
+    });
   }
 }
 
