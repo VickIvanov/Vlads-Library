@@ -20,7 +20,8 @@ export default async function handler(req, res) {
       }
 
       const bookData = { title, author, genre, description, cover, added_by };
-      // ID теперь генерируется автоматически из названия книги
+      // Если ID не указан, он будет сгенерирован из названия для обратной совместимости
+      // При загрузке через upload-book.js ID = полное имя файла
 
       const result = await addBook(bookData);
       if (result.success) {

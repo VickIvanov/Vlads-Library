@@ -5,17 +5,8 @@ import { getBooksDirPath, getBookFilePath } from '../../lib/paths.js';
 import { logToDb } from '../../lib/logger.js';
 import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 
-// Функция для нормализации имени файла
-function normalizeFilename(title) {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9а-яё\s-]/gi, '')
-    .replace(/\s+/g, '_')
-    .replace(/-+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '') + '.txt';
-}
+// Функция normalizeFilename больше не используется
+// ID теперь = полное имя файла, title = отдельное поле
 
 // Конфигурация для Next.js API route
 export const config = {
@@ -204,9 +195,11 @@ export default async function handler(req, res) {
         });
       }
 
-      // Нормализуем имя файла
-      const normalizedFilename = normalizeFilename(title);
-      const filePath = getBookFilePath(normalizedFilename);
+      // Используем оригинальное имя файла как ID
+      const originalFilename = file.originalFilename || file.name || '';
+      const bookId = originalFilename; // ID = полное имя файла
+      const filePath = getBookFilePath(originalFilename);
+      console.log('[UPLOAD-BOOK] ID книги (имя файла):', bookId);
       console.log('[UPLOAD-BOOK] Финальный путь к файлу:', filePath);
 
       // Перемещаем файл с временного имени на финальное
@@ -252,15 +245,20 @@ export default async function handler(req, res) {
         });
       }
 
+      // Определяем формат файла из расширения
+      const fileExtension = originalFilename.split('.').pop()?.toLowerCase() || 'txt';
+      
       // Добавляем книгу в базу данных
+      // ID = полное имя файла, title = отдельное поле для отображения
       const bookData = {
-        title: title.trim(),
+        id: bookId, // ID = полное имя файла
+        title: title.trim(), // title = отдельное поле для отображения на сайте
         author: author.trim(),
         genre: genre.trim(),
         description: description.trim(),
         cover: cover.trim(),
-        book_file: normalizedFilename,
-        file_format: 'txt'
+        book_file: originalFilename,
+        file_format: fileExtension
       };
 
       console.log('[UPLOAD-BOOK] Пытаемся добавить книгу в БД:', { title, author, genre });
@@ -286,7 +284,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ 
           message: 'Книга и файл успешно добавлены', 
           id: result.id,
-          filename: normalizedFilename
+          filename: originalFilename
         });
       } else {
         // Удаляем файл, если не удалось добавить в БД
