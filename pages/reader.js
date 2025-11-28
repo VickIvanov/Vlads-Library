@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 
 export default function Reader() {
   const router = useRouter();
-  const { filename } = router.query;
+  const { id, filename } = router.query; // Поддерживаем оба варианта для обратной совместимости
+  const bookId = id || filename; // Используем id, если есть, иначе filename
   const [content, setContent] = useState('');
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -45,13 +46,19 @@ export default function Reader() {
   };
 
   useEffect(() => {
-    if (!filename) return;
+    if (!bookId) return;
 
     const loadBook = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`/api/read-book?filename=${encodeURIComponent(filename)}`);
+        
+        // Используем новый API с ID, если есть id, иначе старый API с filename
+        const apiUrl = id 
+          ? `/api/books/${encodeURIComponent(id)}/text`
+          : `/api/read-book?filename=${encodeURIComponent(bookId)}`;
+        
+        const res = await fetch(apiUrl);
         
         if (!res.ok) {
           const responseText = await res.text();
@@ -59,7 +66,7 @@ export default function Reader() {
           
           try {
             const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorMessage;
+            errorMessage = errorData.error || errorData.details || errorMessage;
           } catch (jsonError) {
             errorMessage = responseText || errorMessage;
           }
@@ -67,7 +74,20 @@ export default function Reader() {
           throw new Error(errorMessage);
         }
         
-        const text = await res.text();
+        // Новый API возвращает JSON с полями text, title, author
+        // Старый API возвращает просто текст
+        let text, title, author;
+        const contentType = res.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          text = data.text;
+          title = data.title;
+          author = data.author;
+        } else {
+          text = await res.text();
+        }
+        
         setContent(text);
         const bookPages = splitIntoPages(text);
         setPages(bookPages);
@@ -81,15 +101,16 @@ export default function Reader() {
     };
 
     loadBook();
-  }, [filename]);
+  }, [bookId, id]);
 
   // Загрузка закладок
   useEffect(() => {
-    if (!filename) return;
+    if (!bookId) return;
 
     const loadBookmarks = async () => {
       try {
-        const res = await fetch(`/api/bookmarks?filename=${encodeURIComponent(filename)}`);
+        // Используем bookId (может быть id или filename) для закладок
+        const res = await fetch(`/api/bookmarks?filename=${encodeURIComponent(bookId)}`);
         if (res.ok) {
           const data = await res.json();
           setBookmarks(data);
@@ -100,11 +121,11 @@ export default function Reader() {
     };
 
     loadBookmarks();
-  }, [filename]);
+  }, [bookId]);
 
   // Добавление закладки
   const handleAddBookmark = async () => {
-    if (!filename) return;
+    if (!bookId) return;
     
     const title = bookmarkTitle.trim() || `Закладка на странице ${currentPage + 1}`;
     
@@ -112,7 +133,7 @@ export default function Reader() {
       const res = await fetch('/api/bookmarks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename, page: currentPage, title })
+        body: JSON.stringify({ filename: bookId, page: currentPage, title })
       });
       
       if (res.ok) {

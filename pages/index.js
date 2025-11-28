@@ -47,15 +47,17 @@ export default function Home() {
 
   
   const openBookReader = (book) => {
-    if (!book || !book.book_file) {
-      console.error('Книга или файл книги не найдены:', book);
+    if (!book || !book.id) {
+      console.error('Книга или ID книги не найдены:', book);
+      alert('Ошибка: книга не найдена');
       return;
     }
     try {
-      // Открываем страницу чтения
-      window.open(`/reader?filename=${encodeURIComponent(book.book_file)}`, '_blank');
+      // Открываем страницу чтения в текущей вкладке
+      router.push(`/reader?id=${encodeURIComponent(book.id)}`);
     } catch (error) {
       console.error('Ошибка открытия читалки:', error);
+      alert('Ошибка открытия книги');
     }
   };
 
