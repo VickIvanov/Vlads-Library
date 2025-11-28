@@ -198,9 +198,17 @@ export default async function handler(req, res) {
       // Получаем ID из формы, если указан, иначе используем оригинальное имя файла
       const customId = Array.isArray(fields.id) ? fields.id[0] : (fields.id || '');
       const originalFilename = file.originalFilename || file.name || '';
-      const bookId = customId.trim() || originalFilename; // ID = указанное значение или имя файла
+      let bookId = customId.trim() || originalFilename; // ID = указанное значение или имя файла
+      
+      // Убеждаемся, что bookId имеет расширение .txt
+      if (!bookId.endsWith('.txt') && !bookId.endsWith('.TXT')) {
+        bookId = bookId + '.txt';
+      }
+      
       const filePath = getBookFilePath(bookId); // Используем bookId как имя файла
-      console.log('[UPLOAD-BOOK] ID книги (имя файла):', bookId);
+      console.log('[UPLOAD-BOOK] Оригинальное имя файла:', originalFilename);
+      console.log('[UPLOAD-BOOK] Указанный ID:', customId);
+      console.log('[UPLOAD-BOOK] Финальный ID книги:', bookId);
       console.log('[UPLOAD-BOOK] Финальный путь к файлу:', filePath);
 
       // Перемещаем файл с временного имени на финальное
@@ -252,7 +260,7 @@ export default async function handler(req, res) {
       // Добавляем книгу в базу данных
       // ID = указанное значение или полное имя файла, title = отдельное поле для отображения
       const bookData = {
-        id: bookId, // ID = указанное значение или полное имя файла
+        id: bookId, // ID = указанное значение или полное имя файла (с расширением)
         title: title.trim(), // title = отдельное поле для отображения на сайте
         author: author.trim(),
         genre: genre.trim(),
@@ -261,6 +269,12 @@ export default async function handler(req, res) {
         book_file: bookId, // Используем bookId как имя файла
         file_format: fileExtension
       };
+      
+      console.log('[UPLOAD-BOOK] Данные для сохранения в БД:', { 
+        id: bookData.id, 
+        book_file: bookData.book_file,
+        title: bookData.title 
+      });
 
       console.log('[UPLOAD-BOOK] Пытаемся добавить книгу в БД:', { title, author, genre });
       const result = await addBook(bookData);
@@ -276,7 +290,7 @@ export default async function handler(req, res) {
           await logToDb('info', 'Book uploaded and added', { 
             bookId: result.id, 
             title, 
-            filename: normalizedFilename 
+            filename: bookId 
           }, req);
         } catch (logError) {
           console.error('[UPLOAD-BOOK] Ошибка логирования:', logError);
