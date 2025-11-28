@@ -12,6 +12,20 @@ export default function Home() {
   const [showRegister, setShowRegister] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ username: '', password: '', userId: '' });
+  const [favorites, setFavorites] = useState(new Set());
+  
+  const loadFavorites = async (username) => {
+    if (!username) return;
+    try {
+      const res = await fetch(`/api/favorites?username=${encodeURIComponent(username)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFavorites(new Set(data.map(book => book.id)));
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки избранного:', error);
+    }
+  };
 
   const loadBooks = async (showRefreshing = false) => {
     try {
@@ -223,6 +237,7 @@ export default function Home() {
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
         setCurrentUser(savedUser);
+        loadFavorites(savedUser);
         // Проверяем через API, является ли пользователь админом
         fetch(`/api/check-admin?username=${encodeURIComponent(savedUser)}`)
           .then(res => {
@@ -319,10 +334,32 @@ export default function Home() {
                 borderRadius: '8px',
                 color: '#667eea',
                 fontWeight: '600',
-                fontSize: '14px'
-              }}>
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+              onClick={() => router.push('/profile')}
+              >
                 👤 {currentUser}
               </span>
+              <button 
+                onClick={() => router.push('/profile')}
+                style={{ 
+                  padding: '12px 24px', 
+                  backgroundColor: '#8b5cf6', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                👤 Профиль
+              </button>
               <button 
                 onClick={() => router.push('/chats')}
                 style={{ 
@@ -576,35 +613,90 @@ export default function Home() {
                     {book.description}
                   </p>
                 )}
-                <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-                  {book.book_file && (
-                    <button 
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (book && book.book_file) {
-                          openBookReader(book);
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '12px 20px',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
-                      onMouseOut={(e) => e.target.style.backgroundColor = '#10b981'}
-                    >
-                      📖 Читать
-                    </button>
-                  )}
+                <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {book.book_file && (
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (book && book.book_file) {
+                            openBookReader(book);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '12px 20px',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#10b981'}
+                      >
+                        📖 Читать
+                      </button>
+                    )}
+                    {currentUser && (
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const isFavorite = favorites.has(book.id);
+                          try {
+                            if (isFavorite) {
+                              const res = await fetch(`/api/favorites?username=${encodeURIComponent(currentUser)}&bookId=${encodeURIComponent(book.id)}`, {
+                                method: 'DELETE'
+                              });
+                              if (res.ok) {
+                                setFavorites(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(book.id);
+                                  return newSet;
+                                });
+                              }
+                            } else {
+                              const res = await fetch('/api/favorites', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  username: currentUser,
+                                  bookId: book.id
+                                })
+                              });
+                              if (res.ok) {
+                                setFavorites(prev => new Set(prev).add(book.id));
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Ошибка изменения избранного:', error);
+                          }
+                        }}
+                        style={{
+                          padding: '12px 20px',
+                          backgroundColor: favorites.has(book.id) ? '#ef4444' : '#f59e0b',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                        onMouseOut={(e) => e.target.style.opacity = '1'}
+                      >
+                        {favorites.has(book.id) ? '⭐ В избранном' : '⭐ В избранное'}
+                      </button>
+                    )}
+                  </div>
                   {isUserAdmin && (
                     <button 
                       type="button"

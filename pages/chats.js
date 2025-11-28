@@ -53,23 +53,25 @@ export default function Chats() {
             const newMessages = data.data;
             if (newMessages.length > 0) {
               const lastMessage = newMessages[newMessages.length - 1];
-              // Если сообщение для текущего пользователя, обновляем чаты и открываем чат если нужно
+              // Если сообщение для текущего пользователя (входящее), открываем чат только если ничего не выбрано
               if (lastMessage.receiver_username === user) {
-                // Обновляем список чатов сразу
-                loadChats();
-                // Если чат не открыт, открываем его
-                if (!selectedChat || selectedChat !== lastMessage.sender_username) {
+                // Открываем чат только если пользователь не выбрал другой чат вручную
+                const currentSelected = selectedChat || localStorage.getItem('selectedChat');
+                if (!currentSelected || currentSelected === lastMessage.sender_username) {
                   setSelectedChat(lastMessage.sender_username);
                   localStorage.setItem('selectedChat', lastMessage.sender_username);
                 }
               }
             }
             
-            if (selectedChat) {
-              loadMessages(selectedChat);
+            // Обновляем сообщения только для текущего выбранного чата
+            const currentSelected = selectedChat || localStorage.getItem('selectedChat');
+            if (currentSelected) {
+              loadMessages(currentSelected);
             }
           } else if (data.type === 'chats_update') {
             // Обновляем список чатов при получении сигнала
+            // НЕ меняем выбранный чат при обновлении
             loadChats();
             loadUnreadCount();
           } else if (data.type === 'error') {
@@ -133,10 +135,16 @@ export default function Chats() {
         setChats(data);
         
         // Если нет выбранного чата, но есть чаты, открываем первый
-        if (!selectedChat && data.length > 0) {
+        // НО только если пользователь не начал новый чат через поиск
+        // Проверяем и состояние, и localStorage
+        const currentSelected = selectedChat || localStorage.getItem('selectedChat');
+        if (!currentSelected && data.length > 0) {
           const firstChat = data[0].other_username;
           setSelectedChat(firstChat);
           localStorage.setItem('selectedChat', firstChat);
+        } else if (currentSelected && !selectedChat) {
+          // Восстанавливаем выбранный чат из localStorage, если он был сохранен
+          setSelectedChat(currentSelected);
         }
       }
     } catch (error) {
@@ -197,9 +205,14 @@ export default function Chats() {
   };
 
   const startChat = (username) => {
+    // Устанавливаем выбранный чат и сохраняем его
     setSelectedChat(username);
-    localStorage.setItem('selectedChat', username); // Сохраняем выбранный чат
+    localStorage.setItem('selectedChat', username);
     setSearchResult(null);
+    // Загружаем сообщения для нового чата
+    loadMessages(username);
+    // Обновляем список чатов, но не меняем выбранный чат
+    loadChats();
   };
 
   const sendMessage = async (e) => {
@@ -237,8 +250,14 @@ export default function Chats() {
         
         // Сообщение отправлено, обновим данные
         // SSE автоматически обновит интерфейс, но обновим сразу для мгновенной обратной связи
+        // Важно: сохраняем выбранный чат, чтобы не переключился на другой
+        const currentChat = selectedChat;
         setTimeout(() => {
-          loadMessages(selectedChat);
+          if (currentChat) {
+            loadMessages(currentChat);
+            setSelectedChat(currentChat); // Убеждаемся, что чат остался выбранным
+            localStorage.setItem('selectedChat', currentChat);
+          }
           loadChats();
           loadUnreadCount();
         }, 100);
@@ -512,10 +531,85 @@ export default function Chats() {
               <div style={{
                 paddingBottom: '15px',
                 borderBottom: '2px solid #e2e8f0',
-                marginBottom: '15px'
+                marginBottom: '15px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
                 <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>{selectedChat}</h2>
+                <button
+                  onClick={async () => {
+                    if (!showFavorites) {
+                      try {
+                        const res = await fetch(`/api/favorites?username=${encodeURIComponent(selectedChat)}`);
+                        if (res.ok) {
+                          const data = await res.json();
+                          setOtherUserFavorites(data);
+                          setShowFavorites(true);
+                        }
+                      } catch (error) {
+                        console.error('Ошибка загрузки избранного:', error);
+                      }
+                    } else {
+                      setShowFavorites(false);
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: showFavorites ? '#ef4444' : '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showFavorites ? '✕ Закрыть' : '⭐ Избранное'}
+                </button>
               </div>
+
+              {showFavorites && (
+                <div style={{
+                  marginBottom: '15px',
+                  padding: '15px',
+                  background: '#f0f4ff',
+                  borderRadius: '10px',
+                  border: '1px solid #667eea',
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#333' }}>
+                    ⭐ Избранные книги {selectedChat}
+                  </h3>
+                  {otherUserFavorites.length === 0 ? (
+                    <div style={{ color: '#666', fontSize: '14px' }}>
+                      У пользователя нет избранных книг
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {otherUserFavorites.map((book) => (
+                        <div
+                          key={book.id}
+                          style={{
+                            padding: '10px',
+                            background: 'white',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e0e7ff'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                          onClick={() => router.push(`/reader?id=${encodeURIComponent(book.id)}`)}
+                        >
+                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>{book.title}</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>{book.author}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Сообщения */}
               <div style={{
@@ -568,8 +662,13 @@ export default function Chats() {
                           }}>
                             <span>{formatMessageTime(msg.created_at)}</span>
                             {isOwn && (
-                              <span style={{ fontSize: '10px', color: msg.read_status ? '#667eea' : '#999' }}>
-                                {msg.read_status ? '✓✓' : '✓'}
+                              <span style={{ 
+                                fontSize: '14px', 
+                                color: msg.read_status ? '#667eea' : '#999',
+                                fontWeight: 'bold',
+                                marginLeft: '4px'
+                              }}>
+                                {msg.read_status ? '✓✓ Прочитано' : '✓ Отправлено'}
                               </span>
                             )}
                           </div>
