@@ -714,9 +714,15 @@ export default function Home() {
                               });
                               if (res.ok) {
                                 const data = await res.json();
-                                setFavorites(prev => new Set(prev).add(book.id));
+                                console.log('Книга добавлена в избранное:', data);
+                                // Обновляем состояние избранного
+                                setFavorites(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.add(book.id);
+                                  return newSet;
+                                });
                                 // Обновляем список избранного после успешного добавления
-                                loadFavorites(currentUser);
+                                await loadFavorites(currentUser);
                               } else {
                                 const errorData = await res.json().catch(() => ({ error: 'Ошибка добавления в избранное' }));
                                 console.error('Ошибка добавления в избранное:', errorData.error);

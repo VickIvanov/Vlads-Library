@@ -8,7 +8,8 @@
     "start": "next start",
     "vercel-build": "next build",
     "init-db": "node scripts/init-db.js",
-    "migrate": "node scripts/migrate-to-pg.js"
+    "migrate": "node scripts/migrate-to-pg.js",
+    "reset-db": "node scripts/reset-db.js"
   },
   "license": "ISC",
   "dependencies": {

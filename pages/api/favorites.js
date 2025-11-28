@@ -1,4 +1,4 @@
-import { addToFavorites, removeFromFavorites, getUserFavorites, isBookInFavorites, getUserPrivacySettings } from '../../lib/db.js';
+import { addToFavorites, removeFromFavorites, getUserFavorites, isBookInFavorites, getUserPrivacySettings } from '../../lib/db-pg.js';
 import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 import { logToDb } from '../../lib/logger.js';
 
@@ -14,7 +14,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Не указаны пользователь или книга' });
       }
       
+      console.log('[FAVORITES API] Добавление в избранное:', { username, bookId });
       const result = await addToFavorites(username, bookId);
+      console.log('[FAVORITES API] Результат:', result);
       
       if (result.success) {
         try {
@@ -24,6 +26,7 @@ export default async function handler(req, res) {
         }
         return res.status(200).json({ message: 'Книга добавлена в избранное', favorite: result.favorite });
       } else {
+        console.error('[FAVORITES API] Ошибка:', result.message);
         return res.status(400).json({ error: result.message || 'Ошибка добавления в избранное' });
       }
     } else if (req.method === 'DELETE') {
