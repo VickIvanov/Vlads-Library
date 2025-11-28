@@ -27,6 +27,7 @@ const GENRES = [
 export default function AddBook() {
   const router = useRouter();
   const [form, setForm] = useState({ 
+    id: '', // ID = название файла
     title: '', 
     author: '', 
     genre: '', 
@@ -130,6 +131,10 @@ export default function AddBook() {
         
         const formData = new FormData();
         formData.append('file', form.file);
+        // Если указан ID, используем его, иначе будет использовано имя файла
+        if (form.id) {
+          formData.append('id', form.id);
+        }
         formData.append('title', form.title);
         formData.append('author', form.author);
         formData.append('genre', form.genre);
@@ -194,7 +199,7 @@ export default function AddBook() {
       }
       
       if (data.message) {
-        setForm({ title: '', author: '', genre: '', description: '', cover: '', file: null });
+        setForm({ id: '', title: '', author: '', genre: '', description: '', cover: '', file: null });
         router.push('/');
       } else if (data.error) {
         alert(data.error || 'Не удалось добавить книгу');
@@ -284,6 +289,38 @@ export default function AddBook() {
         boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
       }}>
         <form onSubmit={addBook} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              color: '#333', 
+              fontWeight: '600',
+              fontSize: '16px'
+            }}>
+              ID (Название файла)
+            </label>
+            <input 
+              placeholder="Например: my_book_file.txt" 
+              value={form.id} 
+              onChange={e => setForm({...form, id: e.target.value})} 
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '2px solid #e2e8f0',
+                borderRadius: '10px',
+                fontSize: '16px',
+                transition: 'all 0.3s ease',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            />
+            <p style={{ marginTop: '6px', color: '#666', fontSize: '13px' }}>
+              ID будет использован как имя файла. Если не указан, будет использовано имя загруженного файла.
+            </p>
+          </div>
+
           <div>
             <label style={{ 
               display: 'block', 

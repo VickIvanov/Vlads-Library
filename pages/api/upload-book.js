@@ -195,10 +195,11 @@ export default async function handler(req, res) {
         });
       }
 
-      // Используем оригинальное имя файла как ID
+      // Получаем ID из формы, если указан, иначе используем оригинальное имя файла
+      const customId = Array.isArray(fields.id) ? fields.id[0] : (fields.id || '');
       const originalFilename = file.originalFilename || file.name || '';
-      const bookId = originalFilename; // ID = полное имя файла
-      const filePath = getBookFilePath(originalFilename);
+      const bookId = customId.trim() || originalFilename; // ID = указанное значение или имя файла
+      const filePath = getBookFilePath(bookId); // Используем bookId как имя файла
       console.log('[UPLOAD-BOOK] ID книги (имя файла):', bookId);
       console.log('[UPLOAD-BOOK] Финальный путь к файлу:', filePath);
 
@@ -246,18 +247,18 @@ export default async function handler(req, res) {
       }
 
       // Определяем формат файла из расширения
-      const fileExtension = originalFilename.split('.').pop()?.toLowerCase() || 'txt';
+      const fileExtension = bookId.split('.').pop()?.toLowerCase() || 'txt';
       
       // Добавляем книгу в базу данных
-      // ID = полное имя файла, title = отдельное поле для отображения
+      // ID = указанное значение или полное имя файла, title = отдельное поле для отображения
       const bookData = {
-        id: bookId, // ID = полное имя файла
+        id: bookId, // ID = указанное значение или полное имя файла
         title: title.trim(), // title = отдельное поле для отображения на сайте
         author: author.trim(),
         genre: genre.trim(),
         description: description.trim(),
         cover: cover.trim(),
-        book_file: originalFilename,
+        book_file: bookId, // Используем bookId как имя файла
         file_format: fileExtension
       };
 
@@ -284,7 +285,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ 
           message: 'Книга и файл успешно добавлены', 
           id: result.id,
-          filename: originalFilename
+          filename: bookId
         });
       } else {
         // Удаляем файл, если не удалось добавить в БД
