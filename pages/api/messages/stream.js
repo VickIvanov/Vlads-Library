@@ -62,14 +62,14 @@ export default async function handler(req, res) {
     }
   };
 
-  // Отправляем обновления каждую секунду
+  // Отправляем обновления каждые 500мс для более быстрого получения сообщений
   const interval = setInterval(() => {
     if (isActive) {
       sendUpdate();
     } else {
       clearInterval(interval);
     }
-  }, 1000);
+  }, 500);
 
   // Отправляем начальное сообщение
   res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);

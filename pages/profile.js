@@ -30,10 +30,10 @@ export default function Profile() {
       const res = await fetch(`/api/user-privacy?username=${encodeURIComponent(currentUser)}`);
       if (res.ok) {
         const data = await res.json();
-        // Правильно обрабатываем значения: true/null -> true, false -> false
+        // Используем прямое значение из API (уже обработанное в getUserPrivacySettings)
         setPrivacySettings({
-          show_favorites: data.show_favorites !== false,
-          show_description: data.show_description !== false
+          show_favorites: data.show_favorites === true,
+          show_description: data.show_description === true
         });
       }
     } catch (error) {
@@ -79,7 +79,8 @@ export default function Profile() {
     if (!currentUser) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/favorites?username=${encodeURIComponent(currentUser)}`);
+      // Указываем, что это запрос от самого пользователя
+      const res = await fetch(`/api/favorites?username=${encodeURIComponent(currentUser)}&requestingUser=${encodeURIComponent(currentUser)}`);
       if (res.ok) {
         const data = await res.json();
         setFavorites(data);

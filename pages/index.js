@@ -14,6 +14,8 @@ export default function Home() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [registerForm, setRegisterForm] = useState({ username: '', password: '', userId: '' });
   const [favorites, setFavorites] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [booksPerPage] = useState(12);
   
   const loadFavorites = async (username) => {
     if (!username) return;
@@ -47,7 +49,10 @@ export default function Home() {
         return;
       }
       const data = await res.json();
-      setBooks(Array.isArray(data) ? data : []);
+      const booksArray = Array.isArray(data) ? data : [];
+      setBooks(booksArray);
+      // Сбрасываем страницу на первую при загрузке/обновлении книг
+      setCurrentPage(1);
     } catch (error) {
       console.error('Ошибка загрузки книг:', error);
       setBooks([]);
@@ -239,6 +244,14 @@ export default function Home() {
     setCurrentUser(null);
     setIsUserAdmin(false);
   };
+
+  useEffect(() => {
+    // Сбрасываем страницу, если текущая страница больше доступных
+    const maxPage = Math.ceil(books.length / booksPerPage);
+    if (currentPage > maxPage && maxPage > 0) {
+      setCurrentPage(maxPage);
+    }
+  }, [books.length, booksPerPage, currentPage]);
 
   useEffect(() => { 
     // Проверяем, что мы в браузере
@@ -539,12 +552,13 @@ export default function Home() {
             <p style={{ color: '#666', fontSize: '18px' }}>Добавьте первую книгу, чтобы начать!</p>
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '25px'
-          }}>
-            {books.map(book => (
+          <>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '25px'
+            }}>
+              {books.slice((currentPage - 1) * booksPerPage, currentPage * booksPerPage).map(book => (
               <div 
                 key={book.id || book.title} 
                 style={{
@@ -763,7 +777,117 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+            
+            {/* Пагинация */}
+            {books.length > booksPerPage && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '40px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: currentPage === 1 ? '#ccc' : '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  ← Назад
+                </button>
+                
+                <div style={{
+                  display: 'flex',
+                  gap: '5px',
+                  alignItems: 'center'
+                }}>
+                  {Array.from({ length: Math.ceil(books.length / booksPerPage) }, (_, i) => i + 1)
+                    .filter(page => {
+                      // Показываем первую, последнюю, текущую и соседние страницы
+                      return page === 1 || 
+                             page === Math.ceil(books.length / booksPerPage) ||
+                             (page >= currentPage - 1 && page <= currentPage + 1);
+                    })
+                    .map((page, index, array) => {
+                      // Добавляем многоточие если есть пропуск
+                      const showEllipsis = index > 0 && array[index - 1] !== page - 1;
+                      return (
+                        <div key={page} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {showEllipsis && <span style={{ color: 'white', padding: '0 5px' }}>...</span>}
+                          <button
+                            onClick={() => setCurrentPage(page)}
+                            style={{
+                              padding: '10px 15px',
+                              backgroundColor: currentPage === page ? '#667eea' : 'rgba(255,255,255,0.2)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease',
+                              minWidth: '40px'
+                            }}
+                            onMouseOver={(e) => {
+                              if (currentPage !== page) {
+                                e.target.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                              }
+                            }}
+                            onMouseOut={(e) => {
+                              if (currentPage !== page) {
+                                e.target.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                              }
+                            }}
+                          >
+                            {page}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(books.length / booksPerPage), prev + 1))}
+                  disabled={currentPage === Math.ceil(books.length / booksPerPage)}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: currentPage === Math.ceil(books.length / booksPerPage) ? '#ccc' : '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: currentPage === Math.ceil(books.length / booksPerPage) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Вперед →
+                </button>
+                
+                <div style={{
+                  color: 'white',
+                  fontSize: '14px',
+                  marginLeft: '20px',
+                  padding: '10px 15px',
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '8px'
+                }}>
+                  Страница {currentPage} из {Math.ceil(books.length / booksPerPage)}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 

@@ -20,9 +20,10 @@ export default async function handler(req, res) {
       // Сохранить настройки приватности
       const { show_favorites, show_description } = req.body;
       
+      // Правильно обрабатываем boolean значения: если явно false, то false, иначе проверяем на true
       const result = await saveUserPrivacySettings(username, {
-        show_favorites: show_favorites === true || show_favorites === 'true',
-        show_description: show_description === true || show_description === 'true'
+        show_favorites: show_favorites === false ? false : (show_favorites === true || show_favorites === 'true'),
+        show_description: show_description === false ? false : (show_description === true || show_description === 'true')
       });
       
       if (result.success) {

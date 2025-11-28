@@ -59,14 +59,21 @@ export default async function handler(req, res) {
         return res.status(200).json({ isFavorite });
       } else if (username) {
         // Получить избранные книги пользователя
-        // Проверяем настройки приватности
-        const privacySettings = await getUserPrivacySettings(username);
+        // Проверяем, запрашивает ли пользователь свои собственные избранные книги
+        const requestingUser = req.query.requestingUser || req.headers['x-requesting-user'];
+        const isOwnRequest = requestingUser === username;
         
-        if (!privacySettings.show_favorites) {
-          // Если избранное скрыто, возвращаем пустой массив
-          return res.status(200).json([]);
+        // Если это не запрос от самого пользователя, проверяем настройки приватности
+        if (!isOwnRequest) {
+          const privacySettings = await getUserPrivacySettings(username);
+          
+          if (!privacySettings.show_favorites) {
+            // Если избранное скрыто, возвращаем пустой массив
+            return res.status(200).json([]);
+          }
         }
         
+        // Пользователь всегда видит свои избранные книги, независимо от настроек
         const favorites = await getUserFavorites(username);
         return res.status(200).json(favorites);
       } else {
