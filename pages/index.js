@@ -11,7 +11,7 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({ username: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ username: '', password: '', userId: '' });
 
   const loadBooks = async (showRefreshing = false) => {
     try {
@@ -140,7 +140,25 @@ export default function Home() {
     }
 
     if (registerForm.password.length < 5) {
+      alert('Пароль должен содержать минимум 5 символов');
       return;
+    }
+    
+    // Валидация user_id если указан
+    if (registerForm.userId) {
+      const userId = registerForm.userId.trim().replace(/^@+/, '');
+      if (!/^[a-zA-Z0-9_\-]+$/.test(userId)) {
+        alert('ID может содержать только буквы, цифры, подчеркивания и дефисы');
+        return;
+      }
+      if (userId.length < 3) {
+        alert('ID должен содержать минимум 3 символа');
+        return;
+      }
+      if (userId.length > 30) {
+        alert('ID не должен превышать 30 символов');
+        return;
+      }
     }
 
     setLoading(true);
@@ -148,18 +166,23 @@ export default function Home() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerForm)
+        body: JSON.stringify({
+          username: registerForm.username,
+          password: registerForm.password,
+          userId: registerForm.userId || null
+        })
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Ошибка регистрации' }));
         console.error('Ошибка регистрации:', errorData.error);
+        alert(errorData.error || 'Ошибка регистрации');
         setLoading(false);
         return;
       }
       const data = await res.json();
       if (data.message) {
         setShowRegister(false);
-        setRegisterForm({ username: '', password: '' });
+        setRegisterForm({ username: '', password: '', userId: '' });
         setShowLogin(true);
       }
     } catch (error) {
@@ -748,6 +771,25 @@ export default function Home() {
                 onFocus={(e) => e.target.style.borderColor = '#667eea'}
                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
               />
+              <input 
+                type="text"
+                placeholder="Ваш уникальный ID (например: vlad123_) - опционально" 
+                value={registerForm.userId} 
+                onChange={e => setRegisterForm({...registerForm, userId: e.target.value})}
+                style={{
+                  padding: '14px 16px',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  transition: 'all 0.3s ease',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+              />
+              <p style={{ margin: '-10px 0 0 0', fontSize: '12px', color: '#666' }}>
+                ID будет отображаться как @ваш_id. Можно использовать для поиска и связи с другими пользователями.
+              </p>
               <input 
                 type="password"
                 placeholder="Пароль (минимум 5 символов)" 

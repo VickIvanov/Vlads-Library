@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { username, password } = req.body;
+    const { username, password, userId } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Заполните все поля' });
     }
@@ -16,6 +16,32 @@ export default async function handler(req, res) {
     // Проверяем длину пароля
     if (password.length < 5) {
       return res.status(400).json({ error: 'Пароль должен содержать минимум 5 символов' });
+    }
+    
+    // Валидация user_id если указан
+    let normalizedUserId = null;
+    if (userId) {
+      // Убираем @ в начале если есть
+      normalizedUserId = userId.trim().replace(/^@+/, '');
+      
+      // Проверяем формат: только буквы, цифры, подчеркивания, дефисы
+      if (!/^[a-zA-Z0-9_\-]+$/.test(normalizedUserId)) {
+        return res.status(400).json({ 
+          error: 'ID может содержать только буквы, цифры, подчеркивания и дефисы' 
+        });
+      }
+      
+      // Проверяем длину
+      if (normalizedUserId.length < 3) {
+        return res.status(400).json({ error: 'ID должен содержать минимум 3 символа' });
+      }
+      
+      if (normalizedUserId.length > 30) {
+        return res.status(400).json({ error: 'ID не должен превышать 30 символов' });
+      }
+      
+      // Добавляем @ в начало
+      normalizedUserId = '@' + normalizedUserId;
     }
 
     // Проверяем, не существует ли пользователь в .env
@@ -33,7 +59,7 @@ export default async function handler(req, res) {
     }
 
     // Добавляем пользователя в PostgreSQL БД
-    const result = await addUserToDb(username, password);
+    const result = await addUserToDb(username, password, normalizedUserId);
     if (result.success) {
       try {
         await logToDb('info', 'User registered', { username }, req);
