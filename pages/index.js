@@ -320,6 +320,25 @@ export default function Home() {
                 👤 {currentUser}
               </span>
               <button 
+                onClick={() => router.push('/chats')}
+                style={{ 
+                  padding: '12px 24px', 
+                  backgroundColor: '#f59e0b', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                💬 Чаты
+              </button>
+              <button 
                 onClick={handleLogout}
                 style={{ 
                   padding: '12px 24px', 

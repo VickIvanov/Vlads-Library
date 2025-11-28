@@ -1,5 +1,5 @@
-import { getAllUsers, getUsersFromEnv } from '../../lib/users.js';
-import { getAllUsersFromDb } from '../../lib/db.js';
+import { getAllUsers, getUsersFromEnv, isAdmin } from '../../lib/users.js';
+import { getAllUsersFromDb, deleteUserFromDb } from '../../lib/db.js';
 import { logToDb } from '../../lib/logger.js';
 import { ensureDatabaseInitialized } from '../../lib/db-init.js';
 
@@ -27,6 +27,55 @@ function parseUsersFromEnv() {
 export default async function handler(req, res) {
   // Инициализируем БД при первом запросе
   await ensureDatabaseInitialized();
+  
+  if (req.method === 'DELETE') {
+    // Удаление пользователя (только для админа)
+    const { username: adminUsername } = req.query;
+    const { username } = req.body;
+    
+    // Проверяем права админа
+    if (!adminUsername || !isAdmin(adminUsername)) {
+      return res.status(403).json({ error: 'Доступ запрещен. Только администратор может удалять пользователей.' });
+    }
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Имя пользователя не указано' });
+    }
+    
+    // Нельзя удалить самого себя
+    if (username === adminUsername) {
+      return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+    }
+    
+    // Нельзя удалить админа
+    const adminUsernameEnv = process.env.ADMIN_USERNAME || 'admin';
+    if (username === adminUsernameEnv) {
+      return res.status(400).json({ error: 'Нельзя удалить администратора' });
+    }
+    
+    try {
+      const result = await deleteUserFromDb(username);
+      
+      if (result.success) {
+        try {
+          await logToDb('info', 'User deleted by admin', { deletedUser: username, admin: adminUsername }, req);
+        } catch (logError) {
+          // Игнорируем ошибки логирования
+        }
+        return res.status(200).json({ message: result.message || 'Пользователь удален' });
+      } else {
+        return res.status(400).json({ error: result.message || 'Ошибка удаления пользователя' });
+      }
+    } catch (error) {
+      console.error('Ошибка удаления пользователя:', error);
+      try {
+        await logToDb('error', 'Failed to delete user', { username, error: error.message }, req);
+      } catch (logError) {
+        // Игнорируем ошибки логирования
+      }
+      return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+  }
   
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });

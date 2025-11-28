@@ -57,6 +57,35 @@ export default function Users() {
     }
   };
 
+  const handleDeleteUser = async (username) => {
+    if (!currentUser) return;
+    
+    // Подтверждение удаления
+    if (!confirm(`Вы уверены, что хотите удалить пользователя "${username}"?\n\nЭто действие нельзя отменить. Все сообщения пользователя также будут удалены.`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/users?username=${encodeURIComponent(currentUser)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || 'Пользователь успешно удален');
+        loadUsers(); // Обновляем список
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Ошибка удаления' }));
+        alert(errorData.error || 'Ошибка удаления пользователя');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления пользователя:', error);
+      alert('Ошибка удаления пользователя');
+    }
+  };
+
   // Если не админ, показываем сообщение
   if (!loading && currentUser && !isUserAdmin) {
     return (
@@ -323,16 +352,51 @@ export default function Users() {
                         <strong>Email:</strong> {user.email}
                       </div>
                     )}
-                    {user.created_at && (
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#999',
-                        marginTop: '8px'
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#999',
+                      marginTop: '8px',
+                      display: 'flex',
+                      gap: '15px',
+                      alignItems: 'center'
+                    }}>
+                      {user.created_at && (
+                        <span>
+                          <strong>Создан:</strong> {new Date(user.created_at).toLocaleDateString('ru-RU')}
+                        </span>
+                      )}
+                      <span style={{
+                        padding: '4px 10px',
+                        backgroundColor: user.source === 'database' ? '#dbeafe' : '#fef3c7',
+                        color: user.source === 'database' ? '#1e40af' : '#92400e',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '600'
                       }}>
-                        <strong>Создан:</strong> {new Date(user.created_at).toLocaleDateString('ru-RU')}
-                      </div>
-                    )}
+                        {user.source === 'database' ? '📊 БД' : '📝 .env'}
+                      </span>
+                    </div>
                   </div>
+                  {user.source === 'database' && (
+                    <button
+                      onClick={() => handleDeleteUser(user.username)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+                    >
+                      🗑️ Удалить
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
