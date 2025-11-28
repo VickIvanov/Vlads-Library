@@ -32,15 +32,26 @@ export default async function handler(req, res) {
       console.log('[BOOK-TEXT] Книга найдена:', { 
         id: book.id, 
         title: book.title, 
-        book_file: book.book_file 
+        book_file: book.book_file,
+        hasContent: !!book.content
       });
       
+      // Приоритет: содержимое из БД, затем файл на диске
+      if (book.content) {
+        console.log('[BOOK-TEXT] Используется содержимое из БД, размер:', book.content.length);
+        return res.status(200).json({
+          text: book.content,
+          title: book.title || 'Книга',
+          author: book.author || 'Неизвестен'
+        });
+      }
+      
+      // Fallback: пытаемся прочитать файл (для обратной совместимости)
       const filename = book.book_file || book.id;
-
       if (!filename) {
-        console.error('[BOOK-TEXT] Файл книги не указан для ID:', id);
+        console.error('[BOOK-TEXT] Файл книги не указан и содержимое отсутствует для ID:', id);
         return res.status(404).json({ 
-          error: 'Файл книги не указан в базе данных',
+          error: 'Содержимое книги не найдено в базе данных',
           details: `ID: ${id}, book_file: ${book.book_file}`
         });
       }
@@ -51,7 +62,7 @@ export default async function handler(req, res) {
       }
 
       const filePath = getBookFilePath(filename);
-      console.log('[BOOK-TEXT] Путь к файлу:', filePath);
+      console.log('[BOOK-TEXT] Содержимое в БД отсутствует, пытаемся прочитать файл:', filePath);
 
       try {
         // Проверяем существование файла
@@ -61,33 +72,9 @@ export default async function handler(req, res) {
         } catch (accessError) {
           if (accessError.code === 'ENOENT') {
             console.error('[BOOK-TEXT] Файл не найден по пути:', filePath);
-            
-            // Пытаемся найти файл в директории
-            try {
-              const { getBooksDirPath } = await import('../../../../lib/paths.js');
-              const booksDir = getBooksDirPath();
-              const files = await readdir(booksDir);
-              console.log('[BOOK-TEXT] Файлы в директории:', files);
-              
-              // Ищем похожие файлы
-              const similarFiles = files.filter(f => 
-                f.includes(filename.split('.')[0]) || 
-                filename.includes(f.split('.')[0])
-              );
-              
-              return res.status(404).json({ 
-                error: `Файл "${filename}" не найден`,
-                details: `Путь: ${filePath}`,
-                availableFiles: similarFiles.length > 0 ? similarFiles : undefined,
-                allFiles: files.slice(0, 10) // Первые 10 файлов для отладки
-              });
-            } catch (dirError) {
-              console.error('[BOOK-TEXT] Ошибка чтения директории:', dirError);
-            }
-            
             return res.status(404).json({ 
-              error: `Файл "${filename}" не найден`,
-              details: `Путь: ${filePath}`,
+              error: `Содержимое книги не найдено`,
+              details: `Файл "${filename}" не найден и содержимое отсутствует в БД. Перезагрузите книгу.`,
               bookId: id,
               bookFile: filename
             });
@@ -107,8 +94,8 @@ export default async function handler(req, res) {
         console.error('[BOOK-TEXT] Ошибка чтения файла:', error);
         if (error.code === 'ENOENT') {
           return res.status(404).json({ 
-            error: `Файл "${filename}" не найден`,
-            details: `Путь: ${filePath}`
+            error: `Содержимое книги не найдено`,
+            details: `Файл "${filename}" не найден и содержимое отсутствует в БД`
           });
         }
         throw error;

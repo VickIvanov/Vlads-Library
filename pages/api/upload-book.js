@@ -211,12 +211,21 @@ export default async function handler(req, res) {
       console.log('[UPLOAD-BOOK] Финальный ID книги:', bookId);
       console.log('[UPLOAD-BOOK] Финальный путь к файлу:', filePath);
 
-      // Перемещаем файл с временного имени на финальное
+      // Читаем содержимое файла для сохранения в БД
+      let fileContent = '';
       try {
         const { readFile } = await import('fs/promises');
-        const fileContent = await readFile(file.filepath, 'utf-8');
-        await writeFile(filePath, fileContent, 'utf-8');
-        console.log('[UPLOAD-BOOK] Файл сохранен:', filePath);
+        fileContent = await readFile(file.filepath, 'utf-8');
+        console.log('[UPLOAD-BOOK] Содержимое файла прочитано, размер:', fileContent.length, 'символов');
+        
+        // Пытаемся сохранить файл локально (для обратной совместимости)
+        try {
+          await writeFile(filePath, fileContent, 'utf-8');
+          console.log('[UPLOAD-BOOK] Файл также сохранен локально:', filePath);
+        } catch (localError) {
+          // На Vercel это может не работать, но это не критично - содержимое будет в БД
+          console.warn('[UPLOAD-BOOK] Не удалось сохранить файл локально (это нормально на Vercel):', localError.message);
+        }
         
         // Удаляем временный файл
         try {
@@ -225,7 +234,7 @@ export default async function handler(req, res) {
           console.warn('[UPLOAD-BOOK] Не удалось удалить временный файл:', e);
         }
       } catch (error) {
-        console.error('[UPLOAD-BOOK] Ошибка сохранения файла:', error);
+        console.error('[UPLOAD-BOOK] Ошибка чтения файла:', error);
         // Удаляем временный файл
         try {
           if (file.filepath) {
@@ -235,7 +244,7 @@ export default async function handler(req, res) {
           console.error('[UPLOAD-BOOK] Ошибка удаления временного файла:', e);
         }
         return res.status(500).json({ 
-          error: 'Ошибка сохранения файла',
+          error: 'Ошибка чтения файла',
           details: error.message 
         });
       }
@@ -259,6 +268,7 @@ export default async function handler(req, res) {
       
       // Добавляем книгу в базу данных
       // ID = указанное значение или полное имя файла, title = отдельное поле для отображения
+      // content = содержимое файла (хранится в БД для доступности на всех серверах)
       const bookData = {
         id: bookId, // ID = указанное значение или полное имя файла (с расширением)
         title: title.trim(), // title = отдельное поле для отображения на сайте
@@ -267,6 +277,7 @@ export default async function handler(req, res) {
         description: description.trim(),
         cover: cover.trim(),
         book_file: bookId, // Используем bookId как имя файла
+        content: fileContent, // Содержимое файла хранится в БД
         file_format: fileExtension
       };
       
