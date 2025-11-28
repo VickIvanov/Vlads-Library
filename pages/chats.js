@@ -19,8 +19,8 @@ export default function Chats() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [otherUserFavorites, setOtherUserFavorites] = useState([]);
   const [chatNicknames, setChatNicknames] = useState({});
-  const [editingNickname, setEditingNickname] = useState(null);
-  const [nicknameInput, setNicknameInput] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userMenuNickname, setUserMenuNickname] = useState('');
 
   useEffect(() => {
     // Проверяем, залогинен ли пользователь
@@ -587,168 +587,269 @@ export default function Chats() {
               <div style={{
                 paddingBottom: '15px',
                 borderBottom: '2px solid #e2e8f0',
-                marginBottom: '15px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '10px'
+                marginBottom: '15px'
               }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {editingNickname === selectedChat ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
-                      <input
-                        type="text"
-                        value={nicknameInput}
-                        onChange={(e) => setNicknameInput(e.target.value)}
-                        placeholder="Введите имя"
-                        style={{
-                          flex: 1,
-                          padding: '6px 12px',
-                          border: '2px solid #667eea',
-                          borderRadius: '6px',
-                          fontSize: '16px',
-                          outline: 'none'
-                        }}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            saveNickname(selectedChat, nicknameInput);
-                          } else if (e.key === 'Escape') {
-                            setEditingNickname(null);
-                            setNicknameInput('');
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => saveNickname(selectedChat, nicknameInput)}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ✓
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingNickname(null);
-                          setNicknameInput('');
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <h2 style={{ margin: 0, fontSize: '20px', color: '#333' }}>
-                        {getDisplayName(selectedChat)}
+                <h2 
+                  style={{ 
+                    margin: 0, 
+                    fontSize: '20px', 
+                    color: '#333',
+                    cursor: 'pointer',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    display: 'inline-block'
+                  }}
+                  onClick={() => {
+                    setShowUserMenu(true);
+                    setUserMenuNickname(chatNicknames[selectedChat] || '');
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = '#f0f4ff';
+                    e.target.style.color = '#667eea';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#333';
+                  }}
+                >
+                  {getDisplayName(selectedChat)}
+                </h2>
+              </div>
+
+              {/* Модальное окно профиля пользователя */}
+              {showUserMenu && (
+                <>
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      zIndex: 9999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      setShowFavorites(false);
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      background: 'white',
+                      borderRadius: '20px',
+                      padding: '30px',
+                      zIndex: 10000,
+                      maxWidth: '500px',
+                      width: '90%',
+                      maxHeight: '80vh',
+                      overflowY: 'auto',
+                      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '20px'
+                    }}>
+                      <h2 style={{ margin: 0, fontSize: '24px', color: '#333' }}>
+                        👤 {selectedChat}
                       </h2>
                       <button
                         onClick={() => {
-                          setEditingNickname(selectedChat);
-                          setNicknameInput(chatNicknames[selectedChat] || '');
+                          setShowUserMenu(false);
+                          setShowFavorites(false);
                         }}
                         style={{
-                          padding: '4px 8px',
-                          backgroundColor: 'transparent',
-                          color: '#667eea',
-                          border: '1px solid #667eea',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          cursor: 'pointer'
+                          background: 'transparent',
+                          border: 'none',
+                          fontSize: '24px',
+                          cursor: 'pointer',
+                          color: '#999',
+                          padding: '0',
+                          width: '30px',
+                          height: '30px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
                         }}
-                        title="Переименовать"
+                        onMouseOver={(e) => e.target.style.color = '#ef4444'}
+                        onMouseOut={(e) => e.target.style.color = '#999'}
                       >
-                        ✏️
+                        ×
                       </button>
-                    </>
-                  )}
-                </div>
-                <button
-                  onClick={async () => {
-                    if (!showFavorites) {
-                      try {
-                        const res = await fetch(`/api/favorites?username=${encodeURIComponent(selectedChat)}`);
-                        if (res.ok) {
-                          const data = await res.json();
-                          setOtherUserFavorites(data);
-                          setShowFavorites(true);
-                        }
-                      } catch (error) {
-                        console.error('Ошибка загрузки избранного:', error);
-                      }
-                    } else {
-                      setShowFavorites(false);
-                    }
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: showFavorites ? '#ef4444' : '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {showFavorites ? '✕ Закрыть' : '⭐ Избранное'}
-                </button>
-              </div>
+                    </div>
 
-              {showFavorites && (
-                <div style={{
-                  marginBottom: '15px',
-                  padding: '15px',
-                  background: '#f0f4ff',
-                  borderRadius: '10px',
-                  border: '1px solid #667eea',
-                  maxHeight: '300px',
-                  overflowY: 'auto'
-                }}>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#333' }}>
-                    ⭐ Избранные книги {selectedChat}
-                  </h3>
-                  {otherUserFavorites.length === 0 ? (
-                    <div style={{ color: '#666', fontSize: '14px' }}>
-                      У пользователя нет избранных книг
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {otherUserFavorites.map((book) => (
-                        <div
-                          key={book.id}
+                    {/* Переименование */}
+                    <div style={{ marginBottom: '25px' }}>
+                      <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#333' }}>
+                        ✏️ Переименовать
+                      </h3>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <input
+                          type="text"
+                          value={userMenuNickname}
+                          onChange={(e) => setUserMenuNickname(e.target.value)}
+                          placeholder="Введите новое имя (оставьте пустым для сброса)"
                           style={{
-                            padding: '10px',
-                            background: 'white',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
+                            flex: 1,
+                            padding: '12px 16px',
+                            border: '2px solid #e2e8f0',
+                            borderRadius: '10px',
+                            fontSize: '16px',
+                            outline: 'none'
                           }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e0e7ff'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                          onClick={() => router.push(`/reader?id=${encodeURIComponent(book.id)}`)}
+                          onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              saveNickname(selectedChat, userMenuNickname);
+                              setShowUserMenu(false);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            saveNickname(selectedChat, userMenuNickname);
+                            setShowUserMenu(false);
+                          }}
+                          style={{
+                            padding: '12px 24px',
+                            backgroundColor: '#667eea',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
                         >
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>{book.title}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>{book.author}</div>
-                        </div>
-                      ))}
+                          Сохранить
+                        </button>
+                      </div>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                        Это имя будет видно только вам
+                      </p>
                     </div>
-                  )}
-                </div>
+
+                    {/* Избранные книги */}
+                    <div>
+                      <h3 style={{ margin: '0 0 15px 0', fontSize: '18px', color: '#333' }}>
+                        ⭐ Избранные книги
+                      </h3>
+                      {showFavorites ? (
+                        <div style={{
+                          padding: '15px',
+                          background: '#f0f4ff',
+                          borderRadius: '10px',
+                          border: '1px solid #667eea',
+                          maxHeight: '300px',
+                          overflowY: 'auto'
+                        }}>
+                          {otherUserFavorites.length === 0 ? (
+                            <div style={{ color: '#666', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
+                              У пользователя нет избранных книг или они скрыты
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {otherUserFavorites.map((book) => (
+                                <div
+                                  key={book.id}
+                                  style={{
+                                    padding: '12px',
+                                    background: 'white',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e0e7ff'}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                  onClick={() => {
+                                    router.push(`/reader?id=${encodeURIComponent(book.id)}`);
+                                    setShowUserMenu(false);
+                                  }}
+                                >
+                                  <div style={{ fontWeight: '600', marginBottom: '4px', color: '#333' }}>
+                                    {book.title}
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#666' }}>
+                                    {book.author}
+                                  </div>
+                                  {book.genre && (
+                                    <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                                      {book.genre}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => setShowFavorites(false)}
+                            style={{
+                              marginTop: '15px',
+                              width: '100%',
+                              padding: '10px',
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Скрыть избранное
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/favorites?username=${encodeURIComponent(selectedChat)}`);
+                              if (res.ok) {
+                                const data = await res.json();
+                                setOtherUserFavorites(data);
+                                setShowFavorites(true);
+                              } else {
+                                const errorData = await res.json().catch(() => ({ error: 'Избранное скрыто' }));
+                                if (errorData.error) {
+                                  alert('Пользователь скрыл свои избранные книги');
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Ошибка загрузки избранного:', error);
+                              alert('Ошибка загрузки избранных книг');
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '12px 24px',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Показать избранные книги
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Сообщения */}

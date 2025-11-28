@@ -6,6 +6,33 @@ export default function MessageNotifications({ currentUser }) {
   const [notifications, setNotifications] = useState([]);
   const eventSourceRef = useRef(null);
   const processedMessageIds = useRef(new Set());
+  
+  // Загружаем уже показанные уведомления из localStorage при монтировании
+  useEffect(() => {
+    if (currentUser) {
+      const stored = localStorage.getItem(`shownNotifications_${currentUser}`);
+      if (stored) {
+        try {
+          const ids = JSON.parse(stored);
+          processedMessageIds.current = new Set(ids);
+        } catch (e) {
+          console.error('Ошибка загрузки показанных уведомлений:', e);
+        }
+      }
+    }
+  }, [currentUser]);
+  
+  // Сохраняем показанные уведомления в localStorage
+  const saveShownNotification = (messageId) => {
+    if (!currentUser) return;
+    processedMessageIds.current.add(messageId);
+    try {
+      const ids = Array.from(processedMessageIds.current);
+      localStorage.setItem(`shownNotifications_${currentUser}`, JSON.stringify(ids));
+    } catch (e) {
+      console.error('Ошибка сохранения показанных уведомлений:', e);
+    }
+  };
 
   useEffect(() => {
     if (!currentUser) return;
@@ -32,7 +59,8 @@ export default function MessageNotifications({ currentUser }) {
             if (incomingMessages.length > 0) {
               // Добавляем уведомления для новых сообщений
               incomingMessages.forEach(msg => {
-                processedMessageIds.current.add(msg.id);
+                // Сохраняем ID в памяти и localStorage
+                saveShownNotification(msg.id);
                 
                 const notification = {
                   id: msg.id,
@@ -95,7 +123,8 @@ export default function MessageNotifications({ currentUser }) {
       display: 'flex',
       flexDirection: 'column',
       gap: '10px',
-      maxWidth: '350px'
+      maxWidth: '500px',
+      width: '500px'
     }}>
       {notifications.map((notification, index) => (
         <div

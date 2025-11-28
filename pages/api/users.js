@@ -100,6 +100,7 @@ export default async function handler(req, res) {
         password: u.password || null,
         email: u.email,
         name: u.name,
+        user_id: u.user_id,
         source: 'database',
         auth_method: u.auth_method || 'password',
         created_at: u.created_at
@@ -132,6 +133,7 @@ export default async function handler(req, res) {
           password: user.password || null,
           email: user.email,
           name: user.name,
+          user_id: user.user_id,
           source: 'database',
           auth_method: user.auth_method || 'password',
           created_at: user.created_at

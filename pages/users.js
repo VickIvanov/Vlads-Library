@@ -308,6 +308,16 @@ export default function Users() {
                     }}>
                       <strong>Логин:</strong> {user.username}
                     </div>
+                    {user.user_id && (
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#667eea',
+                        marginBottom: '4px',
+                        fontWeight: '600'
+                      }}>
+                        <strong>ID:</strong> {user.user_id}
+                      </div>
+                    )}
                     {user.password !== null && user.password !== undefined && (
                       <div style={{
                         fontSize: '14px',
