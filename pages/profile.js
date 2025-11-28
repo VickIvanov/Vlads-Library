@@ -30,6 +30,7 @@ export default function Profile() {
       const res = await fetch(`/api/user-privacy?username=${encodeURIComponent(currentUser)}`);
       if (res.ok) {
         const data = await res.json();
+        // Правильно обрабатываем значения: true/null -> true, false -> false
         setPrivacySettings({
           show_favorites: data.show_favorites !== false,
           show_description: data.show_description !== false
