@@ -14,6 +14,8 @@ export default function Chats() {
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
   const eventSourceRef = useRef(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     // Проверяем, залогинен ли пользователь
@@ -219,6 +221,20 @@ export default function Chats() {
       });
       
       if (res.ok) {
+        // Убираем статус "пишет" после отправки
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        fetch('/api/messages/typing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: currentUser,
+            receiverUsername: selectedChat,
+            isTyping: false
+          })
+        }).catch(err => console.error('Ошибка отправки статуса "пишет":', err));
+        
         // Сообщение отправлено, обновим данные
         // SSE автоматически обновит интерфейс, но обновим сразу для мгновенной обратной связи
         setTimeout(() => {
@@ -250,6 +266,65 @@ export default function Chats() {
     
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
+
+  const formatMessageTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Отслеживание ввода текста для статуса "пишет"
+  const handleTyping = () => {
+    if (!selectedChat || !currentUser) return;
+    
+    // Отправляем статус "пишет"
+    fetch('/api/messages/typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: currentUser,
+        receiverUsername: selectedChat,
+        isTyping: true
+      })
+    }).catch(err => console.error('Ошибка отправки статуса "пишет":', err));
+    
+    // Очищаем предыдущий таймаут
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Через 2 секунды после остановки ввода убираем статус
+    typingTimeoutRef.current = setTimeout(() => {
+      fetch('/api/messages/typing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: currentUser,
+          receiverUsername: selectedChat,
+          isTyping: false
+        })
+      }).catch(err => console.error('Ошибка отправки статуса "пишет":', err));
+    }, 2000);
+  };
+
+  // Проверка статуса "пишет" собеседника
+  useEffect(() => {
+    if (!selectedChat || !currentUser) return;
+    
+    const checkTyping = async () => {
+      try {
+        const res = await fetch(`/api/messages/typing?username=${encodeURIComponent(currentUser)}&receiverUsername=${encodeURIComponent(selectedChat)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsTyping(data.isTyping);
+        }
+      } catch (error) {
+        console.error('Ошибка проверки статуса "пишет":', error);
+      }
+    };
+    
+    const interval = setInterval(checkTyping, 1000);
+    return () => clearInterval(interval);
+  }, [selectedChat, currentUser]);
 
   if (!currentUser) {
     return null;
@@ -460,37 +535,66 @@ export default function Chats() {
                     Нет сообщений. Начните переписку!
                   </div>
                 ) : (
-                  messages.map((msg) => {
-                    const isOwn = msg.sender_username === currentUser;
-                    return (
-                      <div
-                        key={msg.id}
-                        style={{
-                          alignSelf: isOwn ? 'flex-end' : 'flex-start',
-                          maxWidth: '70%'
-                        }}
-                      >
+                  <>
+                    {messages.map((msg) => {
+                      const isOwn = msg.sender_username === currentUser;
+                      return (
+                        <div
+                          key={msg.id}
+                          style={{
+                            alignSelf: isOwn ? 'flex-end' : 'flex-start',
+                            maxWidth: '70%'
+                          }}
+                        >
+                          <div style={{
+                            padding: '10px 14px',
+                            background: isOwn ? '#667eea' : '#e2e8f0',
+                            color: isOwn ? 'white' : '#333',
+                            borderRadius: '12px',
+                            fontSize: '14px',
+                            wordWrap: 'break-word'
+                          }}>
+                            {msg.content}
+                          </div>
+                          <div style={{
+                            fontSize: '11px',
+                            color: '#999',
+                            marginTop: '4px',
+                            textAlign: isOwn ? 'right' : 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            justifyContent: isOwn ? 'flex-end' : 'flex-start'
+                          }}>
+                            <span>{formatMessageTime(msg.created_at)}</span>
+                            {isOwn && (
+                              <span style={{ fontSize: '10px', color: msg.read_status ? '#667eea' : '#999' }}>
+                                {msg.read_status ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {isTyping && (
+                      <div style={{
+                        alignSelf: 'flex-start',
+                        maxWidth: '70%'
+                      }}>
                         <div style={{
                           padding: '10px 14px',
-                          background: isOwn ? '#667eea' : '#e2e8f0',
-                          color: isOwn ? 'white' : '#333',
+                          background: '#e2e8f0',
+                          color: '#333',
                           borderRadius: '12px',
                           fontSize: '14px',
-                          wordWrap: 'break-word'
+                          fontStyle: 'italic',
+                          opacity: 0.7
                         }}>
-                          {msg.content}
-                        </div>
-                        <div style={{
-                          fontSize: '11px',
-                          color: '#999',
-                          marginTop: '4px',
-                          textAlign: isOwn ? 'right' : 'left'
-                        }}>
-                          {formatTime(msg.created_at)}
+                          {selectedChat} печатает...
                         </div>
                       </div>
-                    );
-                  })
+                    )}
+                  </>
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -500,7 +604,11 @@ export default function Chats() {
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
+                  onChange={e => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                  }}
+                  onKeyDown={handleTyping}
                   placeholder="Введите сообщение..."
                   style={{
                     flex: 1,
