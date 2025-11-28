@@ -16,6 +16,8 @@ export default function Chats() {
   const eventSourceRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [otherUserFavorites, setOtherUserFavorites] = useState([]);
 
   useEffect(() => {
     // Проверяем, залогинен ли пользователь
